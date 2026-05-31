@@ -8,6 +8,10 @@ import rl "vendor:raylib"
 import "core:mem"
 import "core:fmt"
 
+SCREEN_WIDTH :: 1280
+SCREEN_HEIGHT :: 960 
+PIXEL_WINDOW_HEIGHT :: 180
+
 calc_dist :: proc (v1: rl.Vector2 , v2 : rl.Vector2) -> f32 {
     return math.sqrt_f32(math.pow_f32(v1.x - v2.x, 2.) + math.pow_f32(v1.y - v2.y, 2.))
 }
@@ -17,17 +21,23 @@ main :: proc() {
     mem.tracking_allocator_init(&track, context.allocator)
     context.allocator = mem.tracking_allocator(&track)
     
-    rl.SetConfigFlags({.WINDOW_RESIZABLE})
+    rl.SetConfigFlags({.WINDOW_RESIZABLE, .MSAA_4X_HINT})
     rl.InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "drawing")
     rl.SetExitKey(.KEY_NULL)
-    rl.SetTargetFPS(60)
+    rl.SetTargetFPS(65)
     app := app_init()
     defer {
-        for layer in app.settings.layers.canvas_layers {
+        for &layer in app.settings.layers {
+            for &stroke in layer.strokes {
+                delete(stroke.points)
+            }
+            delete(layer.strokes)
             rl.UnloadRenderTexture(layer.render_texture)
         }
-        delete(app.settings.layers.canvas_layers)
-
+        delete(app.settings.layers)
+        delete(app.settings.color_pallete.colors)
+        delete(app.settings.current_stroke.points)
+        
         for _, entry in track.allocation_map {
             fmt.eprintf("%v leak %v bytes \n", entry.location, entry.size)
         }
@@ -40,7 +50,7 @@ main :: proc() {
         
     }
 
-    for layer in app.settings.layers.canvas_layers {
+    for layer in app.settings.layers {
         rl.BeginTextureMode(layer.render_texture)
         rl.ClearBackground(rl.BLANK)
         rl.EndTextureMode()
@@ -52,10 +62,9 @@ main :: proc() {
         dt := rl.GetFrameTime()
         app_update(&app, dt)
         rl.BeginDrawing()
-        rl.ClearBackground(rl.Color {57, 57, 57, 255})
+        rl.ClearBackground(UI_DARK_25_COLOR)
         container_rect := app.settings.container_rect
-        rl.DrawRectangleRec(container_rect, rl.Color{75,75,75,255})
-        rl.DrawRectangleLinesEx(container_rect, 0.5, rl.Color{125,125,125,255})
+        rl.DrawRectangleRec(container_rect, UI_DARK_75_COLOR)
         for col in 0..<int(math.floor_f32(container_rect.width / 50)) {
             for row in 0..<int(math.floor_f32(container_rect.height / 50)) {
                 if col % 2 == row % 2 {
@@ -64,9 +73,10 @@ main :: proc() {
             }
         }
         
-        rl.DrawRectangleRec(app.settings.paint_rect, rl.WHITE)
+        rl.DrawRectangleRec(app.settings.paint_rect, rl.Color {255,255,255, 150})
+        rl.DrawRectangleLinesEx(container_rect, 2.5, rl.Color{125,125,125,255})
 
-        for layer in app.settings.layers.canvas_layers {
+        for layer in app.settings.layers {
             source := rl.Rectangle {
                 0,
                 0,

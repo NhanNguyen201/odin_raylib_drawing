@@ -2,15 +2,20 @@
 
 package main
 import rl "vendor:raylib"
-import "vendor:raylib/rlgl"
-SCREEN_WIDTH :: 1080
-SCREEN_HEIGHT :: 720 
-PIXEL_WINDOW_HEIGHT :: 180
+
+UI_SETTING_START : rl.Vector2 : {2.5, 0}
+UI_SETTING_HEIGHT : f32 : 10.  
+UI_TOOL_START : rl.Vector2 : {2.5, 30}
+UI_TOOL_HEIGHT : f32 : 10.  
+UI_COLOR_PCIKER_START : rl.Vector2 : {2.5, 50}
+UI_COLOR_PCIKER_WIDTH : f32 : 70
+UI_PAINTING_CONTAINER_START : rl.Vector2 : {80, 50}
 
 App :: struct {
     prev_mouse: rl.Vector2,
     app_mode : App_mode,
-    settings: App_settings
+    settings: App_settings,
+    font: rl.Font
 }
 
 App_mode :: enum {
@@ -19,12 +24,14 @@ App_mode :: enum {
 }
 
 App_settings:: struct {
+    is_mouse_down : bool,
     brush_size: f32,
-    brush_color: rl.Color,
-    layers: Canvas_layers,
+    layers: [dynamic] Canvas_layer,
     container_rect: rl.Rectangle,
     paint_rect : rl.Rectangle,
-    active_layer: int
+    color_pallete : Color_pallete,
+    active_layer: int,
+    current_stroke: Stroke
 }
 
 Drawing_shape :: enum {
@@ -32,33 +39,39 @@ Drawing_shape :: enum {
     RECT
 }
 
-Canvas_layers :: struct {
-    canvas_layers : [dynamic] Canvas_layer
-}
+
 
 Canvas_layer :: struct {
     name: string,
-    render_texture:  rl.RenderTexture2D
+    opacity: f32,
+    visible: bool,
+    render_texture:  rl.RenderTexture2D,
+    strokes: [dynamic] Stroke
 }
 
 app_init :: proc () -> App {
-    container_rect := rl.Rectangle {x = 10, y = 10, width = 960, height = 720}
-    painting_rect := rl.Rectangle{x = 10, y = 10, width = 500, height = 500}
+    color_pallete_rect := rl.Rectangle {x = UI_COLOR_PCIKER_START.x, y= UI_COLOR_PCIKER_START.y, width = UI_COLOR_PCIKER_WIDTH, height = 200}
+    container_rect := rl.Rectangle {x = color_pallete_rect.x + color_pallete_rect.width + 10., y = UI_PAINTING_CONTAINER_START.y, width = 960, height = 720}
+    painting_rect := rl.Rectangle{x = container_rect.x + 10, y = container_rect.y + 10, width = 500, height = 500}
     app := App {
-        
+        font = rl.LoadFont("assets/Roboto-Regular.ttf"),
         settings = {
             container_rect = container_rect,
             brush_size = 8.,
-            brush_color = rl.BLACK,
+            active_layer = 0,
             paint_rect = painting_rect,
+            color_pallete = {
+                active_color = 0,
+                colors = {{color = rl.BLACK}, {color = rl.BLUE}, {color = rl.BROWN}, {color = rl.WHITE}},
+                component_rect = color_pallete_rect
+            }
             
         }
     }
     texture := rl.LoadRenderTexture(i32(painting_rect.width), i32(painting_rect.height))
-    append(&app.settings.layers.canvas_layers, Canvas_layer {
+    append(&app.settings.layers, Canvas_layer {
         name = "Layer_1", render_texture = texture
     })
-    app.settings.active_layer = 0
     return app
 }
 
@@ -66,56 +79,17 @@ app_update:: proc(app: ^App, dt: f32) {
     if rl.IsKeyPressed(.K) {
         app.app_mode = app.app_mode == .DRAWING ? .ERASE : .DRAWING
     }
+    // if rl.IsWindowResized() {
+
+    // }
     // if rl.IsKeyPressed(.E) {
     //     image := rl.LoadImageFromTexture(app.canvas.texture)
     //     rl.ImageFlipVertical(&image)
     //     rl.ExportImage(image, "drawing.png")
     //     rl.UnloadImage(image)
     // }
-    mouse := rl.GetMousePosition()
-    active_layer := app.settings.layers.canvas_layers[app.settings.active_layer]
-        if app.app_mode == .DRAWING {
-            if rl.IsMouseButtonDown(.LEFT) && is_rect_hover(mouse, app.settings.paint_rect){
-                rl.BeginTextureMode(active_layer.render_texture)
-                canvas_mouse := mouse - rl.Vector2{app.settings.paint_rect.x, app.settings.paint_rect.y}
-                canvas_prev_mouse := app.prev_mouse - rl.Vector2{app.settings.paint_rect.x, app.settings.paint_rect.y}
-                    rl.DrawCircleV(canvas_mouse, app.settings.brush_size, app.settings.brush_color)
-                    if calc_dist(canvas_mouse, canvas_prev_mouse) > app.settings.brush_size {
-                        rl.DrawLineEx(
-                            canvas_prev_mouse,     
-                            canvas_mouse,
-                            app.settings.brush_size * 2,
-                            app.settings.brush_color
-                        )
-                        
-                    } 
-                rl.EndTextureMode()
-
-            }
-        } else if app.app_mode == .ERASE {
-            if rl.IsMouseButtonDown(.LEFT) && is_rect_hover(mouse, app.settings.paint_rect){
-            
-                canvas_mouse := mouse - rl.Vector2{app.settings.paint_rect.x, app.settings.paint_rect.y}
-                canvas_prev_mouse := app.prev_mouse - rl.Vector2{app.settings.paint_rect.x, app.settings.paint_rect.y}
-                rl.BeginTextureMode(active_layer.render_texture)
-                rl.BeginBlendMode(.CUSTOM)
-                rlgl.SetBlendFactors(rlgl.ZERO, rlgl.ONE_MINUS_DST_ALPHA, rlgl.FUNC_ADD)
-               
-    
-                rl.DrawCircleV(
-                    canvas_mouse,
-                    app.settings.brush_size,
-                    rl.Color {255, 255, 255, 0},
-                )
-           
-                
-                rl.EndBlendMode()
-                rl.EndTextureMode()
-    
-            }
-        }
-    
-    app.prev_mouse = mouse
+    painting_rect_update(app)
+    color_pallete_render(app.font, &app.settings.color_pallete)
 }
 
 is_rect_hover:: proc(mouse: rl.Vector2, rect: rl.Rectangle) -> bool {
