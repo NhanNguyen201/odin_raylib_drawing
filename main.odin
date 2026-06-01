@@ -60,7 +60,6 @@ main :: proc() {
 
     for !rl.WindowShouldClose() {
         dt := rl.GetFrameTime()
-        app_update(&app, dt)
         rl.BeginDrawing()
         rl.ClearBackground(UI_DARK_25_COLOR)
         container_rect := app.settings.container_rect
@@ -73,27 +72,11 @@ main :: proc() {
             }
         }
         
-        rl.DrawRectangleRec(app.settings.paint_rect, rl.Color {255,255,255, 150})
-        rl.DrawRectangleLinesEx(container_rect, 2.5, rl.Color{125,125,125,255})
+        app_update(&app, dt)
+        
+        
 
-        for layer in app.settings.layers {
-            source := rl.Rectangle {
-                0,
-                0,
-                f32(layer.render_texture.texture.width),
-                -f32(layer.render_texture.texture.height), // IMPORTANT: flip vertically
-            }
-    
-            rl.DrawTexturePro(
-                layer.render_texture.texture,
-                source,
-                app.settings.paint_rect,
-                0,
-                0,
-                rl.WHITE,
-            )
-
-        }
+        
         rl.EndDrawing()
     }
 }

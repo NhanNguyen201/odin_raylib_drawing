@@ -29,17 +29,19 @@ painting_rect_update :: proc(app : ^App) {
             append(&app.settings.current_stroke.points,  canvas_mouse)
          
             rl.BeginTextureMode(active_layer.render_texture)
-            points := &app.settings.current_stroke.points
+            points := app.settings.current_stroke.points
             if len(points) > 1 {
                 p1 := points[len(points)-1]
                 p2 := points[len(points)-2]
                 if calc_dist(p1, p2) > app.settings.brush_size / 2 {
                     rl.DrawLineEx(p1, p2, app.settings.brush_size * 2, brush_color)
+                    rl.DrawCircleV(p1, app.settings.brush_size, brush_color)
+
                 } else {
                     rl.DrawCircleV(p1, app.settings.brush_size, brush_color)
-                    rl.DrawCircleV(p2, app.settings.brush_size, brush_color)
+                    // rl.DrawCircleV(p2, app.settings.brush_size, brush_color)
                 }
-            } else if len(points) > 0 {
+            } else if len(points) == 1 {
                 rl.DrawCircleV(points[len(points)-1], app.settings.brush_size, brush_color)
             }
 
@@ -100,9 +102,11 @@ painting_rect_update :: proc(app : ^App) {
                         p2 := points[idx - 1]
                         if calc_dist(p1, p2) > stroke.size / 2 {
                             rl.DrawLineEx(p1, p2, stroke.size * 2, stroke.color)
+                            rl.DrawCircleV(p1, app.settings.brush_size, brush_color)
+
                         } else {
                             rl.DrawCircleV(p1, stroke.size, stroke.color)
-                            rl.DrawCircleV(p2, stroke.size, stroke.color)
+                            // rl.DrawCircleV(p2, stroke.size, stroke.color)
                         }
                     } else {
                         rl.DrawCircleV(point, stroke.size, stroke.color)
@@ -115,21 +119,37 @@ painting_rect_update :: proc(app : ^App) {
         }
     }
 
-    stroke_length_fmt := fmt.ctprintfln("stroke length: %d, current_length %d", len(active_layer.strokes[:]), len(app.settings.current_stroke.points[:]))
-    rl.DrawText(stroke_length_fmt, 0, 800, 20, rl.WHITE)
-    for stroke, idx in active_layer.strokes[:] {
-        stroke_length_fmt := fmt.ctprintfln("stroke idx: %d, current_length %d", idx, len(stroke.points))
-        rl.DrawText(stroke_length_fmt, 0, i32(850 + idx * 20), 15, rl.WHITE)
-
+    if app.settings.is_debug {
+        stroke_length_fmt := fmt.ctprintfln("stroke length: %d, current_length %d", len(active_layer.strokes[:]), len(app.settings.current_stroke.points[:]))
+        rl.DrawText(stroke_length_fmt, 0, 800, 20, rl.WHITE)
+        for stroke, idx in active_layer.strokes[:] {
+            stroke_length_fmt := fmt.ctprintfln("stroke idx: %d, current_length %d", idx, len(stroke.points))
+            rl.DrawText(stroke_length_fmt, 0, i32(850 + idx * 20), 15, rl.WHITE)
+    
+        }
     }
     app.prev_mouse = mouse
-    
 }
 
-coppy_vec2_array :: proc (arr : []rl.Vector2) -> [dynamic] rl.Vector2 {
-    new_array : [dynamic]rl.Vector2 = {}
-    for i := 0; i < len(arr); i += 1 {
-        append(&new_array, rl.Vector2{arr[i].x, arr[i].y})
-    } 
-    return new_array
+painting_rect_render :: proc(app: ^App) {
+    rl.DrawRectangleRec(app.settings.paint_rect, rl.Color {255,255,255, 150})
+    rl.DrawRectangleLinesEx(app.settings.container_rect, 2.5, rl.Color{125,125,125,255})
+    for layer in app.settings.layers {
+        source := rl.Rectangle {
+            0,
+            0,
+            f32(layer.render_texture.texture.width),
+            -f32(layer.render_texture.texture.height), // IMPORTANT: flip vertically
+        }
+
+        rl.DrawTexturePro(
+            layer.render_texture.texture,
+            source,
+            app.settings.paint_rect,
+            0,
+            0,
+            rl.WHITE,
+        )
+
+    }
 }
