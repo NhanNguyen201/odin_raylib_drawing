@@ -18,7 +18,7 @@ layers_display_render :: proc(font: rl.Font, app_settings: ^App_settings) {
     add_rect := rl.Rectangle {x = title_rect.x + title_rect.width - 30, y = title_rect.y + 5, width = 20, height = title_rect.height - 10}
     rl.DrawRectangleRec(add_rect, rl.BLUE)
     if is_rect_hover(rl.GetMousePosition(), add_rect) && rl.IsMouseButtonPressed(.LEFT){
-        new_texture := rl.LoadRenderTexture(i32(app_settings.paint_rect.width), i32(app_settings.paint_rect.height))
+        new_texture := rl.LoadRenderTexture(i32(app_settings.paint_rect.rect.width), i32(app_settings.paint_rect.rect.height))
         rl.BeginTextureMode(new_texture)
         rl.ClearBackground(rl.BLANK)
         rl.EndTextureMode()

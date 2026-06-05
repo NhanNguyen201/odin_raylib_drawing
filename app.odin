@@ -23,15 +23,17 @@ Paint_mode :: enum {
 }
 
 App_settings:: struct {
+    camera: rl.Camera2D,
+    canvas_size: rl.Vector2,
     container_rect: rl.Rectangle,
-    paint_rect : rl.Rectangle,
+    paint_rect : Draggable_rect,
     layers_rect: rl.Rectangle,
     tools_rect: rl.Rectangle,
     paint_mode : Paint_mode,
     color_pallete : Color_pallete,
     is_debug: bool,
     is_mouse_down : bool,
-    brush_size: f32,
+    brush_size: Slider_value ,
     brush_shape: Brush_shape,
     layers: [dynamic] Canvas_layer,
     active_layer: int,
@@ -56,20 +58,36 @@ Canvas_layer :: struct {
 }
 
 app_init :: proc () -> App {
+    canvas_size := rl.Vector2 {1500, 1500}
     color_pallete_rect := rl.Rectangle {x = UI_COLOR_PCIKER_START.x, y= UI_COLOR_PCIKER_START.y, width = UI_COLOR_PCIKER_WIDTH, height = 200}
     container_rect := rl.Rectangle {x = color_pallete_rect.x + color_pallete_rect.width + 10., y = UI_PAINTING_CONTAINER_START.y, width = 960, height = 720}
     tools_rect := rl.Rectangle {x = container_rect.x , y = container_rect.y + container_rect.height + 10, width = 960, height = 100}
-    painting_rect := rl.Rectangle{x = container_rect.x + 10, y = container_rect.y + 10, width = 500, height = 500}
+    painting_rect := rl.Rectangle{x = container_rect.x + 10, y = container_rect.y + 10, width = canvas_size.x, height = canvas_size.y}
+    painting_dis_rect := rl.Rectangle {
+        x = painting_rect.x,
+        y = painting_rect.y,
+        width = min(painting_rect.width, container_rect.width - (painting_rect.x  - container_rect.x) ) ,
+        height = min(painting_rect.height, container_rect.height - (painting_rect.y - container_rect.y) )
+    }
     layers_display_rect := rl.Rectangle{x = container_rect.x + container_rect.width, y = 50, width = 100, height = 720}
     brush_color := rl.BLACK
     app := App {
         font = rl.LoadFont("assets/Roboto-Regular.ttf"),
         settings = {
             container_rect = container_rect,
-            paint_rect = painting_rect,
+            camera = {
+                offset = 0,
+                zoom = 1.,
+                // offset = {container_rect.width / 2, container_rect.height / 2},
+            },
+            paint_rect = {
+                rect = painting_rect,
+                
+                container_rect = container_rect
+            },
             layers_rect = layers_display_rect,
             tools_rect = tools_rect,
-            brush_size = 8.,
+            brush_size = { val = 8. },
             active_layer = 0,
             paint_mode = .DRAWING,
             color_pallete = {

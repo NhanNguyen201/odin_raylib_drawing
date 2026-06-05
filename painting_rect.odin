@@ -12,21 +12,32 @@ get_color_from_pallete :: proc (colors: []Draw_color, idx: int) -> rl.Color {
     res := is_color(colors, idx)
     return res ? colors[idx].color : rl.BLACK
 }
+
+Draggable_rect :: struct {
+    rect: rl.Rectangle,
+    container_rect: rl.Rectangle,
+    is_dragged: bool,
+    click_pos: rl.Vector2,
+    drag_offset: rl.Vector2
+}
+
 painting_rect_update :: proc(app : ^App) {
-    mouse := rl.GetMousePosition()
+    mouse := rl.GetScreenToWorld2D(
+        rl.GetMousePosition() ,
+        app.settings.camera,
+    )
     active_layer := &app.settings.layers[app.settings.active_layer]
     brush_color := get_color_from_pallete(app.settings.color_pallete.colors[:], app.settings.color_pallete.active_color)
     
     
     if app.settings.paint_mode == .DRAWING {
-        if rl.IsMouseButtonDown(.LEFT) && is_rect_hover(mouse, app.settings.paint_rect){
+        if rl.IsMouseButtonDown(.LEFT) && is_rect_hover(mouse, app.settings.paint_rect.rect){
             if !app.settings.is_mouse_down {
                 app.settings.is_mouse_down = true
             } 
-            canvas_mouse := mouse - {app.settings.paint_rect.x, app.settings.paint_rect.y}
-            // canvas_prev_mouse := app.prev_mouse - rl.Vector2{app.settings.paint_rect.x, app.settings.paint_rect.y}
+            draw_pos := mouse - {app.settings.paint_rect.rect.x, app.settings.paint_rect.rect.y}
            
-            append(&app.settings.current_stroke.points,  canvas_mouse)
+            append(&app.settings.current_stroke.points,  draw_pos)
          
             rl.BeginTextureMode(active_layer.render_texture)
             points := app.settings.current_stroke.points
@@ -34,10 +45,10 @@ painting_rect_update :: proc(app : ^App) {
             if len(points) > 1 {
                 p1 := points[len(points)-1]
                 p2 := points[len(points)-2]
-                paint_canvas_2_point(p1, p2, app.settings.brush_size, app.settings.brush_shape, brush_color)
+                paint_canvas_2_point(p1, p2, app.settings.brush_size.val, app.settings.brush_shape, brush_color)
             } else if len(points) == 1 {
                 p := points[0]
-                paint_canvas_1_point(p, app.settings.brush_size, app.settings.brush_shape, brush_color)
+                paint_canvas_1_point(p, app.settings.brush_size.val, app.settings.brush_shape, brush_color)
             }
 
                 
@@ -52,7 +63,7 @@ painting_rect_update :: proc(app : ^App) {
             new_stroke := Stroke {
                 points = app.settings.current_stroke.points, 
                 mode = .DRAWING,
-                size = app.settings.brush_size, 
+                size = app.settings.brush_size.val, 
                 shape = app.settings.brush_shape,
                 color = brush_color
             }
@@ -61,12 +72,12 @@ painting_rect_update :: proc(app : ^App) {
         }
         
     } else if app.settings.paint_mode == .ERASE {
-        if rl.IsMouseButtonDown(.LEFT) && is_rect_hover(mouse, app.settings.paint_rect){
+        if rl.IsMouseButtonDown(.LEFT) && is_rect_hover(mouse, app.settings.paint_rect.rect){
             if !app.settings.is_mouse_down {
                 app.settings.is_mouse_down = true
             } 
-            canvas_mouse := mouse - rl.Vector2{app.settings.paint_rect.x, app.settings.paint_rect.y}
-            erase_point(canvas_mouse, active_layer.render_texture, app.settings.brush_size, app.settings.brush_shape)
+            canvas_mouse := mouse - rl.Vector2{app.settings.paint_rect.rect.x, app.settings.paint_rect.rect.y}
+            erase_point(canvas_mouse, active_layer.render_texture, app.settings.brush_size.val, app.settings.brush_shape)
             append(&app.settings.current_stroke.points,  canvas_mouse)
 
         }
@@ -76,7 +87,7 @@ painting_rect_update :: proc(app : ^App) {
             new_stroke := Stroke {
                 points = app.settings.current_stroke.points, 
                 mode = .ERASE,
-                size = app.settings.brush_size, 
+                size = app.settings.brush_size.val, 
                 shape = app.settings.brush_shape,
                 color = brush_color
             }
@@ -129,29 +140,79 @@ painting_rect_update :: proc(app : ^App) {
         }
     }
     app.prev_mouse = mouse
+    if is_rect_hover(rl.GetMousePosition(), app.settings.container_rect) {
+        if rl.IsKeyPressed(.KP_ADD) {
+            app.settings.brush_size.val += 2.
+        }
+        if rl.IsKeyPressed(.KP_SUBTRACT) {
+            app.settings.brush_size.val -= 2.
+        }
+    }
+
+    
 }
 
 painting_rect_render :: proc(app: ^App) {
-    rl.DrawRectangleRec(app.settings.paint_rect, rl.Color {255,255,255, 150})
+    full_paint_rect := app.settings.paint_rect.rect
+
     rl.DrawRectangleLinesEx(app.settings.container_rect, 2.5, rl.Color{125,125,125,255})
+    rl.BeginMode2D(app.settings.camera)
+   
+    rl.BeginScissorMode(
+        i32(app.settings.container_rect.x),
+        i32(app.settings.container_rect.y),
+        i32(app.settings.container_rect.width),
+        i32(app.settings.container_rect.height),
+    )
+    rl.DrawRectangleRec(full_paint_rect, rl.Color {255,255,255, 150})
     for layer in app.settings.layers {
         source := rl.Rectangle {
-            0,
-            0,
-            f32(layer.render_texture.texture.width),
-            -f32(layer.render_texture.texture.height), // IMPORTANT: flip vertically
+            x = 0,
+            y =  0,
+            width= f32(layer.render_texture.texture.width),
+            height = -f32(layer.render_texture.texture.height)
         }
-
+        // cropped_source := rl.Rectangle {
+        //     ( display_rect.x - full_paint_rect.x ) / full_paint_rect.width * f32(layer.render_texture.texture.width) ,
+        //     ( display_rect.y - full_paint_rect.y ) / full_paint_rect.height * f32(layer.render_texture.texture.height),
+        //     display_rect.width / full_paint_rect.width * source.width,
+        //      ( display_rect.height / full_paint_rect.height) *  source.height, // IMPORTANT: flip vertically
+        // }
+        
         rl.DrawTexturePro(
             layer.render_texture.texture,
             source,
-            app.settings.paint_rect,
+            full_paint_rect,
             0,
             0,
             rl.WHITE,
         )
 
     }
+    rl.EndScissorMode()
+    draw_pos := rl.GetScreenToWorld2D(
+        rl.GetMousePosition(),
+        app.settings.camera,
+    ) 
+     if is_rect_hover(draw_pos, app.settings.paint_rect.rect) {
+        brush_color := get_color_from_pallete(app.settings.color_pallete.colors[:], app.settings.color_pallete.active_color)
+
+        switch app.settings.brush_shape {
+            case .Point : {
+                rl.DrawCircleV(draw_pos, app.settings.brush_size.val, brush_color)
+            }
+            case .Circle : {
+                rl.DrawCircleLinesV(draw_pos, app.settings.brush_size.val, brush_color)
+            }
+            case .Rect : {
+                rl.DrawRectangleV(draw_pos - app.settings.brush_size.val, app.settings.brush_size.val * 2, brush_color)
+
+            }
+        }
+    }
+    rl.EndMode2D()
+    // ui draw a shape at the cursor
+    dragged_rect_update(&app.settings.paint_rect, &app.settings.camera)
 }
 
 paint_canvas_2_point :: proc(p1, p2: rl.Vector2, brush_size: f32, brush_shape: Brush_shape, color: rl.Color) {
