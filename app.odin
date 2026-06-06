@@ -12,7 +12,6 @@ UI_COLOR_PCIKER_WIDTH : f32 : 100
 UI_PAINTING_CONTAINER_START : rl.Vector2 : {80, 50}
 
 App :: struct {
-    prev_mouse: rl.Vector2,
     settings: App_settings,
     font: rl.Font
 }
@@ -24,6 +23,7 @@ Paint_mode :: enum {
 
 App_settings:: struct {
     camera: rl.Camera2D,
+    camera_zoom: f32,
     canvas_size: rl.Vector2,
     container_rect: rl.Rectangle,
     paint_rect : Draggable_rect,
@@ -58,7 +58,7 @@ Canvas_layer :: struct {
 }
 
 app_init :: proc () -> App {
-    canvas_size := rl.Vector2 {1500, 1500}
+    canvas_size := rl.Vector2 {750, 750}
     color_pallete_rect := rl.Rectangle {x = UI_COLOR_PCIKER_START.x, y= UI_COLOR_PCIKER_START.y, width = UI_COLOR_PCIKER_WIDTH, height = 200}
     container_rect := rl.Rectangle {x = color_pallete_rect.x + color_pallete_rect.width + 10., y = UI_PAINTING_CONTAINER_START.y, width = 960, height = 720}
     tools_rect := rl.Rectangle {x = container_rect.x , y = container_rect.y + container_rect.height + 10, width = 960, height = 100}
@@ -80,6 +80,7 @@ app_init :: proc () -> App {
                 zoom = 1.,
                 // offset = {container_rect.width / 2, container_rect.height / 2},
             },
+            camera_zoom = 1.,
             paint_rect = {
                 rect = painting_rect,
                 
@@ -119,6 +120,49 @@ app_update:: proc(app: ^App, dt: f32) {
     color_pallete_render(app.font, &app.settings.color_pallete)
     layers_display_render(app.font, &app.settings)
     tools_rect_render(app.font, &app.settings)
+
+    if rl.IsKeyPressed(.E) {
+        texture := rl.LoadRenderTexture(i32(app.settings.paint_rect.rect.width), i32(app.settings.paint_rect.rect.height))
+        // rl.BeginDrawing()
+        // rl.BeginTextureMode(texture)
+        for layer in app.settings.layers {
+            layer_txt := rl.LoadRenderTexture(i32(app.settings.paint_rect.rect.width), i32(app.settings.paint_rect.rect.height))
+            rl.BeginDrawing()
+            rl.BeginTextureMode(layer_txt)
+            for stroke in layer.strokes {
+                for point, idx in stroke.points {
+                    switch stroke.mode {
+                        case .DRAWING : {
+                            if idx > 0 {
+                                p1 := stroke.points[idx]
+                                p2 := stroke.points[idx - 1]
+                                paint_canvas_2_point(p1, p2, stroke.size, stroke.shape, stroke.color)
+                            } else {
+                                paint_canvas_1_point(stroke.points[0], stroke.size, stroke.shape, stroke.color)
+        
+                            }
+                        }
+                        case .ERASE : {
+                            erase_point(point, layer_txt, stroke.size, stroke.shape)
+                        }
+                    }
+                }
+            }
+            rl.EndTextureMode()
+            rl.BeginTextureMode(texture)
+            rl.DrawTexture(layer_txt.texture, 0, 0, rl.WHITE)
+            rl.EndTextureMode()
+            rl.EndDrawing()
+            rl.UnloadTexture(layer_txt.texture)
+        }
+     
+        image := rl.LoadImageFromTexture(texture.texture)
+       
+
+        rl.ExportImage(image, "drawing.png")
+        rl.UnloadTexture(texture.texture)
+        rl.UnloadImage(image)
+    }
 }
 
 is_rect_hover:: proc(mouse: rl.Vector2, rect: rl.Rectangle) -> bool {

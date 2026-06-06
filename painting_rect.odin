@@ -31,7 +31,7 @@ painting_rect_update :: proc(app : ^App) {
     
     
     if app.settings.paint_mode == .DRAWING {
-        if rl.IsMouseButtonDown(.LEFT) && is_rect_hover(mouse, app.settings.paint_rect.rect){
+        if rl.IsMouseButtonDown(.LEFT) && is_rect_hover(mouse, app.settings.paint_rect.rect) && is_rect_hover(rl.GetMousePosition(), app.settings.paint_rect.container_rect){
             if !app.settings.is_mouse_down {
                 app.settings.is_mouse_down = true
             } 
@@ -139,13 +139,34 @@ painting_rect_update :: proc(app : ^App) {
     
         }
     }
-    app.prev_mouse = mouse
     if is_rect_hover(rl.GetMousePosition(), app.settings.container_rect) {
         if rl.IsKeyPressed(.KP_ADD) {
             app.settings.brush_size.val += 2.
         }
         if rl.IsKeyPressed(.KP_SUBTRACT) {
             app.settings.brush_size.val -= 2.
+        }
+        wheel := rl.GetMouseWheelMove()
+
+        if wheel != 0 {
+
+            mouse_world_before :=
+                rl.GetScreenToWorld2D(
+                    mouse,
+                    app.settings.camera,
+                )  * app.settings.camera_zoom
+
+            app.settings.camera_zoom += wheel * rl.GetFrameTime()
+
+            app.settings.camera_zoom = clamp(app.settings.camera_zoom, 0.1, 1.5)
+            app.settings.camera.zoom = app.settings.camera_zoom
+            mouse_world_after :=
+                rl.GetScreenToWorld2D(
+                    mouse,
+                    app.settings.camera,
+                ) * app.settings.camera_zoom
+
+            app.settings.camera.target += (mouse_world_before - mouse_world_after) * rl.GetFrameTime() * 20
         }
     }
 

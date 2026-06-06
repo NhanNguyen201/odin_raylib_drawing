@@ -85,3 +85,7 @@ dragged_rect_update :: proc(drag_rect: ^Draggable_rect, camera: ^rl.Camera2D) {
 
     }
 }
+
+get_rect_center :: proc(rect: rl.Rectangle) -> rl.Vector2 {
+    return {rect.x + rect.width / 2, rect.y + rect.height / 2}
+}
