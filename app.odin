@@ -16,12 +16,18 @@ App :: struct {
     font: rl.Font
 }
 
+App_mode :: enum {
+    Paint, 
+    View_3d,
+}
+
 Paint_mode :: enum {
     DRAWING,
     ERASE
 }
 
 App_settings:: struct {
+    app_mode: App_mode,
     camera: rl.Camera2D,
     camera_zoom: f32,
     canvas_size: rl.Vector2,
@@ -37,7 +43,8 @@ App_settings:: struct {
     brush_shape: Brush_shape,
     layers: [dynamic] Canvas_layer,
     active_layer: int,
-    current_stroke: Stroke
+    current_stroke: Stroke,
+    view_3d: View_3d
 }
 
 Brush_shape :: enum {
@@ -46,8 +53,17 @@ Brush_shape :: enum {
     Rect
 }
 
+View_3d :: struct {
+    out_texture: rl.RenderTexture2D,
+    in_texutre: rl.RenderTexture2D,
+    camera: rl.Camera3D,
+    camera_settings: View_3d_camera_settings,
+    view_plane_model : rl.Model
+}
 
-
+View_3d_camera_settings:: struct {
+    position: rl.Vector3
+}
 
 Canvas_layer :: struct {
     name: string,
@@ -75,6 +91,24 @@ app_init :: proc () -> App {
         font = rl.LoadFont("assets/Roboto-Regular.ttf"),
         settings = {
             container_rect = container_rect,
+            view_3d = {
+                out_texture = rl.LoadRenderTexture(i32(container_rect.width), i32(container_rect.height)),
+                in_texutre = rl.LoadRenderTexture(i32(painting_rect.width), i32(painting_rect.height)),
+                view_plane_model = rl.LoadModelFromMesh(rl.GenMeshPlane(
+                    4,
+                    3,
+                    25,
+                    25,
+                )),
+                camera_settings = {position = {0, 10.5, 2.}},
+                camera = {
+                    fovy = 45,
+                    position = {0, 10.5, 2.},
+                    projection = .PERSPECTIVE,
+                    target = rl.Vector3{0,0,0},
+                    up = rl.Vector3{0,1,0}
+                }
+            },
             camera = {
                 offset = 0,
                 zoom = 1.,
@@ -117,10 +151,19 @@ app_update:: proc(app: ^App, dt: f32) {
     painting_rect_update(app)
     painting_rect_render(app)
 
-    color_pallete_render(app.font, &app.settings.color_pallete)
-    layers_display_render(app.font, &app.settings)
-    tools_rect_render(app.font, &app.settings)
+    if app.settings.app_mode == .Paint {
+        color_pallete_render(app.font, &app.settings.color_pallete)
+        layers_display_render(app.font, &app.settings)
+        tools_rect_render(app.font, &app.settings)
+    }
 
+    if rl.IsKeyPressed(.TAB) {
+        if app.settings.app_mode == .Paint {
+            app.settings.app_mode = .View_3d
+        } else if app.settings.app_mode == .View_3d {
+            app.settings.app_mode = .Paint
+        }
+    }
     if rl.IsKeyPressed(.E) {
         texture := rl.LoadRenderTexture(i32(app.settings.paint_rect.rect.width), i32(app.settings.paint_rect.rect.height))
         // rl.BeginDrawing()

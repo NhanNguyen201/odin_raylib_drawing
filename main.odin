@@ -37,7 +37,9 @@ main :: proc() {
         delete(app.settings.layers)
         delete(app.settings.color_pallete.colors)
         delete(app.settings.current_stroke.points)
-        
+        rl.UnloadModel(app.settings.view_3d.view_plane_model)
+        rl.UnloadRenderTexture(app.settings.view_3d.in_texutre)
+        rl.UnloadRenderTexture(app.settings.view_3d.out_texture)
         for _, entry in track.allocation_map {
             fmt.eprintf("%v leak %v bytes \n", entry.location, entry.size)
         }

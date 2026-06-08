@@ -69,7 +69,6 @@ dragged_rect_update :: proc(drag_rect: ^Draggable_rect, camera: ^rl.Camera2D) {
     )
     if is_rect_hover(mouse, drag_rect.container_rect) && rl.IsMouseButtonPressed(.MIDDLE) {
         drag_rect.is_dragged = true
-        drag_rect.drag_offset = mouse - {drag_rect.rect.x, drag_rect.rect.y}
     }
     if drag_rect.is_dragged && rl.IsMouseButtonDown(.MIDDLE) {
         delta := rl.GetMouseDelta()
