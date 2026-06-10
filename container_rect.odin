@@ -33,7 +33,7 @@ painting_rect_update :: proc(app : ^App) {
         brush_color := get_color_from_pallete(app.settings.color_pallete.colors[:], app.settings.color_pallete.active_color)
         
         
-        if app.settings.paint_mode == .DRAWING {
+        if app.settings.paint_mode == .Drawing {
             if rl.IsMouseButtonDown(.LEFT) && is_rect_hover(mouse, app.settings.paint_rect.rect) && is_rect_hover(rl.GetMousePosition(), app.settings.paint_rect.container_rect){
                 if !app.settings.is_mouse_down {
                     app.settings.is_mouse_down = true
@@ -65,7 +65,7 @@ painting_rect_update :: proc(app : ^App) {
                 
                 new_stroke := Stroke {
                     points = app.settings.current_stroke.points, 
-                    mode = .DRAWING,
+                    mode = .Drawing,
                     size = app.settings.brush_size.val, 
                     shape = app.settings.brush_shape,
                     color = brush_color
@@ -74,7 +74,7 @@ painting_rect_update :: proc(app : ^App) {
                 app.settings.current_stroke = Stroke {}
             }
             
-        } else if app.settings.paint_mode == .ERASE {
+        } else if app.settings.paint_mode == .Erase {
             if rl.IsMouseButtonDown(.LEFT) && is_rect_hover(mouse, app.settings.paint_rect.rect){
                 if !app.settings.is_mouse_down {
                     app.settings.is_mouse_down = true
@@ -89,7 +89,7 @@ painting_rect_update :: proc(app : ^App) {
                 
                 new_stroke := Stroke {
                     points = app.settings.current_stroke.points, 
-                    mode = .ERASE,
+                    mode = .Erase,
                     size = app.settings.brush_size.val, 
                     shape = app.settings.brush_shape,
                     color = brush_color
@@ -111,7 +111,7 @@ painting_rect_update :: proc(app : ^App) {
                     points := stroke.points
                     for point, idx in points {
                         switch stroke.mode {
-                            case .DRAWING : {
+                            case .Drawing : {
                                 if idx > 0 {
                                     p1 := points[idx]
                                     p2 := points[idx - 1]
@@ -121,7 +121,7 @@ painting_rect_update :: proc(app : ^App) {
             
                                 }
                             }
-                            case .ERASE : {
+                            case .Erase : {
                                 erase_point(point, active_layer.render_texture, stroke.size, stroke.shape)
                             }
                         }
@@ -220,13 +220,22 @@ painting_rect_render :: proc(app: ^App) {
     
             switch app.settings.brush_shape {
                 case .Point : {
-                    rl.DrawCircleV(draw_pos, app.settings.brush_size.val, brush_color)
+                    if app.settings.paint_mode == .Drawing {
+                        rl.DrawCircleV(draw_pos, app.settings.brush_size.val, brush_color)
+                    } else {
+                        rl.DrawCircleLinesV(draw_pos, app.settings.brush_size.val, brush_color)
+                    }
                 }
                 case .Circle : {
                     rl.DrawCircleLinesV(draw_pos, app.settings.brush_size.val, brush_color)
                 }
                 case .Rect : {
-                    rl.DrawRectangleV(draw_pos - app.settings.brush_size.val, app.settings.brush_size.val * 2, brush_color)
+                    if app.settings.paint_mode == .Drawing {
+                        rl.DrawRectangleV(draw_pos - app.settings.brush_size.val, app.settings.brush_size.val * 2, brush_color)
+                    } else {
+                        rl.DrawRectangleLinesEx({x = draw_pos.x - app.settings.brush_size.val, y = draw_pos.y - app.settings.brush_size.val , width = app.settings.brush_size.val * 2, height = app.settings.brush_size.val * 2}, 1. , brush_color)
+
+                    }
     
                 }
             }

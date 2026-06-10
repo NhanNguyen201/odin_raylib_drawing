@@ -2,6 +2,9 @@
 
 package main
 import rl "vendor:raylib"
+import "core:math"
+import "core:reflect"
+import "core:fmt"
 
 UI_SETTING_START : rl.Vector2 : {2.5, 0}
 UI_SETTING_HEIGHT : f32 : 10.  
@@ -22,8 +25,8 @@ App_mode :: enum {
 }
 
 Paint_mode :: enum {
-    DRAWING,
-    ERASE
+    Drawing,
+    Erase
 }
 
 App_settings:: struct {
@@ -125,7 +128,7 @@ app_init :: proc () -> App {
             tools_rect = tools_rect,
             brush_size = { val = 8. },
             active_layer = 0,
-            paint_mode = .DRAWING,
+            paint_mode = .Drawing,
             color_pallete = {
                 active_color = 0,
                 colors = {{color = rl.BLACK}, {color = rl.BLUE}, {color = rl.BROWN}, {color = rl.WHITE}},
@@ -144,8 +147,9 @@ app_init :: proc () -> App {
 
 app_update:: proc(app: ^App, dt: f32) {
     app.settings.app_time += rl.GetFrameTime()
+    app_mode_render(app.font, &app.settings)
     if rl.IsKeyPressed(.K) {
-        app.settings.paint_mode = app.settings.paint_mode == .DRAWING ? .ERASE : .DRAWING
+        app.settings.paint_mode = app.settings.paint_mode == .Drawing ? .Erase : .Drawing
     }
     if rl.IsKeyPressed(.D) {
         app.settings.is_debug = !app.settings.is_debug 
@@ -177,7 +181,7 @@ app_update:: proc(app: ^App, dt: f32) {
             for stroke in layer.strokes {
                 for point, idx in stroke.points {
                     switch stroke.mode {
-                        case .DRAWING : {
+                        case .Drawing : {
                             if idx > 0 {
                                 p1 := stroke.points[idx]
                                 p2 := stroke.points[idx - 1]
@@ -187,7 +191,7 @@ app_update:: proc(app: ^App, dt: f32) {
         
                             }
                         }
-                        case .ERASE : {
+                        case .Erase : {
                             erase_point(point, layer_txt, stroke.size, stroke.shape)
                         }
                     }
@@ -213,4 +217,30 @@ app_update:: proc(app: ^App, dt: f32) {
 is_rect_hover:: proc(mouse: rl.Vector2, rect: rl.Rectangle) -> bool {
     return rl.CheckCollisionPointRec(mouse, rect)
 
+}
+
+app_mode_render :: proc(font: rl.Font, settings: ^App_settings) {
+    @static button_size :rl.Vector2 = {75, 30}
+    @static button_font_size : f32 = 20
+    @static button_font_spacing : f32 = 0.4
+    for mode, idx in App_mode {
+        mode_button_rect := rl.Rectangle {x = 5 + (button_size.x + 10) * f32(idx), y = 10, width = button_size.x, height = button_size.y}
+        is_hovered := is_rect_hover(rl.GetMousePosition(), mode_button_rect)
+        is_active := mode == settings.app_mode
+        rl.DrawRectangleRounded(mode_button_rect, 0.2, 5, is_active ? rl.BLACK : rl.WHITE)
+        if is_active {
+            rl.DrawRectangleRoundedLinesEx({x = mode_button_rect.x + 2, y = mode_button_rect.y + 2, width = mode_button_rect.width - 4, height = mode_button_rect.height - 4}, 0.2, 5, 2, rl.WHITE)
+        } else {
+            if is_hovered {
+                rl.DrawRectangleRec({x = mode_button_rect.x , y = mode_button_rect.y + 5, width = mode_button_rect.width, height = mode_button_rect.height - 10}, rl.BLACK)
+                if rl.IsMouseButtonPressed(.LEFT) {
+                    settings.app_mode = mode
+                }
+            }
+        } 
+
+        fmt_mode := fmt.ctprint(reflect.enum_string(mode))
+        masured, _, _ := get_text_to_ui(font, fmt_mode, button_font_size, button_font_spacing)
+        rl.DrawTextPro(font, fmt_mode, {mode_button_rect.x + 5, mode_button_rect.y + (mode_button_rect.height / 2)}, {0, masured.y / 2}, 0, button_font_size, button_font_spacing, (is_active || is_hovered) ? rl.WHITE : rl.BLACK)
+    }
 }
