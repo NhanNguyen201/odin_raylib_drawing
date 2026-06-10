@@ -143,11 +143,11 @@ painting_rect_update :: proc(app : ^App) {
             // }
         }
         if is_rect_hover(rl.GetMousePosition(), app.settings.container_rect) {
-            if rl.IsKeyPressed(.KP_ADD) {
-                app.settings.brush_size.val += 2.
+            if rl.IsKeyDown(.KP_ADD) {
+                app.settings.brush_size.val += rl.GetFrameTime()
             }
-            if rl.IsKeyPressed(.KP_SUBTRACT) {
-                app.settings.brush_size.val = max (0., app.settings.brush_size.val - 2.)
+            if rl.IsKeyDown(.KP_SUBTRACT) {
+                app.settings.brush_size.val = max (0., app.settings.brush_size.val - rl.GetFrameTime())
             }
             wheel := rl.GetMouseWheelMove()
     
@@ -236,8 +236,10 @@ painting_rect_render :: proc(app: ^App) {
         dragged_rect_update(&app.settings.paint_rect, &app.settings.camera)
 
     } else if app.settings.app_mode == .View_3d {
-       
-        // app.settings.camera_3d.position.z += 10 * math.sin_f32(rl.GetFrameTime() * 0.05)
+    
+        app.settings.view_3d.camera_settings.position.x = 5.5 * math.cos_f32(app.settings.app_time * 0.5)
+        app.settings.view_3d.camera_settings.position.z = 5.5 * math.sin_f32(app.settings.app_time * 0.5) 
+        app.settings.view_3d.camera.position = app.settings.view_3d.camera_settings.position
         rl.BeginTextureMode(app.settings.view_3d.in_texutre)
         rl.ClearBackground(rl.BLANK)
         for layer in app.settings.layers {
@@ -245,27 +247,25 @@ painting_rect_render :: proc(app: ^App) {
         }
         rl.EndTextureMode()
         rl.BeginTextureMode(app.settings.view_3d.out_texture)
-        rl.BeginScissorMode(
-            i32(f32(rl.GetScreenWidth() / 2)  - app.settings.container_rect.width / 2),
-            i32(f32(rl.GetScreenHeight() / 2)  - app.settings.container_rect.height / 2),
-            i32(app.settings.container_rect.width),
-            i32(app.settings.container_rect.height),
-        )
         rl.BeginMode3D(app.settings.view_3d.camera)
-        rl.ClearBackground(rl.BLANK)
-        // rl.DrawCube(0, 1,1, 1, rl.BLUE)
-        // rl.DrawPlane( {0,0, 0.}, {10, 10}, rl.YELLOW)
-        // rl.DrawCube(0, 1,1, 1, rl.BLACK)
+      
+        rl.ClearBackground(rl.Color{175,175,175,220})
+        
         app.settings.view_3d.view_plane_model.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture = app.settings.view_3d.in_texutre.texture
-        rl.DrawModel(
+        rlgl.DisableBackfaceCulling()
+        rl.DrawModelEx(
             app.settings.view_3d.view_plane_model,
-            rl.Vector3{0,0,0},
-            1.0,
+            rl.Vector3{0,0, 0},
+            rl.Vector3 {0.5, 0, 0},
+            90,
+            1.,
             rl.WHITE,
         )
+        rlgl.EnableBackfaceCulling()
+        
         rl.EndMode3D()
-        rl.EndScissorMode()
         rl.EndTextureMode()
+
         rl.DrawTexture(app.settings.view_3d.out_texture.texture, i32(app.settings.paint_rect.container_rect.x), i32(app.settings.paint_rect.container_rect.y), rl.WHITE)
     }
 }

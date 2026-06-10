@@ -27,6 +27,7 @@ Paint_mode :: enum {
 }
 
 App_settings:: struct {
+    app_time: f32,
     app_mode: App_mode,
     camera: rl.Camera2D,
     camera_zoom: f32,
@@ -74,7 +75,7 @@ Canvas_layer :: struct {
 }
 
 app_init :: proc () -> App {
-    canvas_size := rl.Vector2 {750, 750}
+    canvas_size := rl.Vector2 {750, 500}
     color_pallete_rect := rl.Rectangle {x = UI_COLOR_PCIKER_START.x, y= UI_COLOR_PCIKER_START.y, width = UI_COLOR_PCIKER_WIDTH, height = 200}
     container_rect := rl.Rectangle {x = color_pallete_rect.x + color_pallete_rect.width + 10., y = UI_PAINTING_CONTAINER_START.y, width = 960, height = 720}
     tools_rect := rl.Rectangle {x = container_rect.x , y = container_rect.y + container_rect.height + 10, width = 960, height = 100}
@@ -97,13 +98,13 @@ app_init :: proc () -> App {
                 view_plane_model = rl.LoadModelFromMesh(rl.GenMeshPlane(
                     4,
                     3,
-                    25,
-                    25,
+                    1,
+                    1,
                 )),
-                camera_settings = {position = {0, 10.5, 2.}},
+                camera_settings = {position = {0, 0, 25.}},
                 camera = {
                     fovy = 45,
-                    position = {0, 10.5, 2.},
+                    position = {0, 0, 25.},
                     projection = .PERSPECTIVE,
                     target = rl.Vector3{0,0,0},
                     up = rl.Vector3{0,1,0}
@@ -142,6 +143,7 @@ app_init :: proc () -> App {
 }
 
 app_update:: proc(app: ^App, dt: f32) {
+    app.settings.app_time += rl.GetFrameTime()
     if rl.IsKeyPressed(.K) {
         app.settings.paint_mode = app.settings.paint_mode == .DRAWING ? .ERASE : .DRAWING
     }
