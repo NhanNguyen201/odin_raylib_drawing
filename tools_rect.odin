@@ -18,6 +18,9 @@ tools_rect_render :: proc(font: rl.Font, settings : ^App_settings) {
     @static font_size :f32 = 20
     @static spacing :f32 = 0.25
     ui_rect := settings.tools_rect
+
+    
+    // Paint mode
     for paint_mode, idx in Paint_mode {
         rect := rl.Rectangle{x = ui_rect.x  + (paint_mode_button_size.x + 5) * f32(idx), y = ui_rect.y, height = paint_mode_button_size.y, width = paint_mode_button_size.x}
         is_hovered := is_rect_hover(rl.GetMousePosition(), rect)

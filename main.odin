@@ -73,13 +73,13 @@ main :: proc() {
                 }
             }
         }
-
         app_update(&app, dt)
-        
-        
 
-        
         rl.EndDrawing()
+        
+        
+        
+        
     }
 }
 

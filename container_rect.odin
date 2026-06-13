@@ -21,7 +21,17 @@ Draggable_rect :: struct {
     click_pos: rl.Vector2,
 }
 
+Text_Input :: struct {
+    buf: [5]u8,
+    len: int,
+    is_active: bool,
+}
 
+Size_widget :: struct {
+    is_active: bool,
+    width_input: Text_Input,
+    height_input: Text_Input
+}
 painting_rect_update :: proc(app : ^App) {
     if app.settings.app_mode == .Paint {
 
@@ -32,104 +42,106 @@ painting_rect_update :: proc(app : ^App) {
         active_layer := &app.settings.layers[app.settings.active_layer]
         brush_color := get_color_from_pallete(app.settings.color_pallete.colors[:], app.settings.color_pallete.active_color)
         
-        
-        if app.settings.paint_mode == .Drawing {
-            if rl.IsMouseButtonDown(.LEFT) && is_rect_hover(mouse, app.settings.paint_rect.rect) && is_rect_hover(rl.GetMousePosition(), app.settings.paint_rect.container_rect){
-                if !app.settings.is_mouse_down {
-                    app.settings.is_mouse_down = true
-                } 
-                draw_pos := mouse - {app.settings.paint_rect.rect.x, app.settings.paint_rect.rect.y}
-               
-                append(&app.settings.current_stroke.points,  draw_pos)
-             
-                rl.BeginTextureMode(active_layer.render_texture)
-                points := app.settings.current_stroke.points
-                
-                if len(points) > 1 {
-                    p1 := points[len(points)-1]
-                    p2 := points[len(points)-2]
-                    paint_canvas_2_point(p1, p2, app.settings.brush_size.val, app.settings.brush_shape, brush_color)
-                } else if len(points) == 1 {
-                    p := points[0]
-                    paint_canvas_1_point(p, app.settings.brush_size.val, app.settings.brush_shape, brush_color)
-                }
-    
+        if app.settings.ui_scene == .None {
+
+            if app.settings.paint_mode == .Drawing {
+                if rl.IsMouseButtonDown(.LEFT) && is_rect_hover(mouse, app.settings.paint_rect.rect) && is_rect_hover(rl.GetMousePosition(), app.settings.paint_rect.container_rect){
+                    if !app.settings.is_mouse_down {
+                        app.settings.is_mouse_down = true
+                    } 
+                    draw_pos := mouse - {app.settings.paint_rect.rect.x, app.settings.paint_rect.rect.y}
+                   
+                    append(&app.settings.current_stroke.points,  draw_pos)
+                 
+                    rl.BeginTextureMode(active_layer.render_texture)
+                    points := app.settings.current_stroke.points
                     
-                  
-                rl.EndTextureMode()
-                        
-            }
+                    if len(points) > 1 {
+                        p1 := points[len(points)-1]
+                        p2 := points[len(points)-2]
+                        paint_canvas_2_point(p1, p2, app.settings.brush_size.val, app.settings.brush_shape, brush_color)
+                    } else if len(points) == 1 {
+                        p := points[0]
+                        paint_canvas_1_point(p, app.settings.brush_size.val, app.settings.brush_shape, brush_color)
+                    }
         
-            if rl.IsMouseButtonReleased(.LEFT) && app.settings.is_mouse_down {
-                app.settings.is_mouse_down = false
-                
-                new_stroke := Stroke {
-                    points = app.settings.current_stroke.points, 
-                    mode = .Drawing,
-                    size = app.settings.brush_size.val, 
-                    shape = app.settings.brush_shape,
-                    color = brush_color
+                        
+                      
+                    rl.EndTextureMode()
+                            
                 }
-                append(&active_layer.strokes, new_stroke)
-                app.settings.current_stroke = Stroke {}
-            }
             
-        } else if app.settings.paint_mode == .Erase {
-            if rl.IsMouseButtonDown(.LEFT) && is_rect_hover(mouse, app.settings.paint_rect.rect){
-                if !app.settings.is_mouse_down {
-                    app.settings.is_mouse_down = true
-                } 
-                canvas_mouse := mouse - rl.Vector2{app.settings.paint_rect.rect.x, app.settings.paint_rect.rect.y}
-                erase_point(canvas_mouse, active_layer.render_texture, app.settings.brush_size.val, app.settings.brush_shape)
-                append(&app.settings.current_stroke.points,  canvas_mouse)
-    
-            }
-            if rl.IsMouseButtonReleased(.LEFT) && app.settings.is_mouse_down {
-                app.settings.is_mouse_down = false
-                
-                new_stroke := Stroke {
-                    points = app.settings.current_stroke.points, 
-                    mode = .Erase,
-                    size = app.settings.brush_size.val, 
-                    shape = app.settings.brush_shape,
-                    color = brush_color
+                if rl.IsMouseButtonReleased(.LEFT) && app.settings.is_mouse_down {
+                    app.settings.is_mouse_down = false
+                    
+                    new_stroke := Stroke {
+                        points = app.settings.current_stroke.points, 
+                        mode = .Drawing,
+                        size = app.settings.brush_size.val, 
+                        shape = app.settings.brush_shape,
+                        color = brush_color
+                    }
+                    append(&active_layer.strokes, new_stroke)
+                    app.settings.current_stroke = Stroke {}
                 }
-                append(&active_layer.strokes, new_stroke)
-                app.settings.current_stroke = Stroke {}
+                
+            } else if app.settings.paint_mode == .Erase {
+                if rl.IsMouseButtonDown(.LEFT) && is_rect_hover(mouse, app.settings.paint_rect.rect){
+                    if !app.settings.is_mouse_down {
+                        app.settings.is_mouse_down = true
+                    } 
+                    canvas_mouse := mouse - rl.Vector2{app.settings.paint_rect.rect.x, app.settings.paint_rect.rect.y}
+                    erase_point(canvas_mouse, active_layer.render_texture, app.settings.brush_size.val, app.settings.brush_shape)
+                    append(&app.settings.current_stroke.points,  canvas_mouse)
+        
+                }
+                if rl.IsMouseButtonReleased(.LEFT) && app.settings.is_mouse_down {
+                    app.settings.is_mouse_down = false
+                    
+                    new_stroke := Stroke {
+                        points = app.settings.current_stroke.points, 
+                        mode = .Erase,
+                        size = app.settings.brush_size.val, 
+                        shape = app.settings.brush_shape,
+                        color = brush_color
+                    }
+                    append(&active_layer.strokes, new_stroke)
+                    app.settings.current_stroke = Stroke {}
+                }
             }
-        }
-        if rl.IsKeyPressed(.Z) {
-            strokes_len := len(active_layer.strokes)
-            if   strokes_len > 0 {
-    
-                delete(active_layer.strokes[strokes_len - 1].points)
-                _ = pop(&active_layer.strokes)
-    
-                rl.BeginTextureMode(active_layer.render_texture)
-                rl.ClearBackground(rl.BLANK)
-                for stroke in active_layer.strokes {
-                    points := stroke.points
-                    for point, idx in points {
-                        switch stroke.mode {
-                            case .Drawing : {
-                                if idx > 0 {
-                                    p1 := points[idx]
-                                    p2 := points[idx - 1]
-                                    paint_canvas_2_point(p1, p2, stroke.size, stroke.shape, stroke.color)
-                                } else {
-                                    paint_canvas_1_point(points[0], stroke.size, stroke.shape, stroke.color)
-            
+            if rl.IsKeyPressed(.Z) {
+                strokes_len := len(active_layer.strokes)
+                if   strokes_len > 0 {
+        
+                    delete(active_layer.strokes[strokes_len - 1].points)
+                    _ = pop(&active_layer.strokes)
+        
+                    rl.BeginTextureMode(active_layer.render_texture)
+                    rl.ClearBackground(rl.BLANK)
+                    for stroke in active_layer.strokes {
+                        points := stroke.points
+                        for point, idx in points {
+                            switch stroke.mode {
+                                case .Drawing : {
+                                    if idx > 0 {
+                                        p1 := points[idx]
+                                        p2 := points[idx - 1]
+                                        paint_canvas_2_point(p1, p2, stroke.size, stroke.shape, stroke.color)
+                                    } else {
+                                        paint_canvas_1_point(points[0], stroke.size, stroke.shape, stroke.color)
+                
+                                    }
+                                }
+                                case .Erase : {
+                                    erase_point(point, active_layer.render_texture, stroke.size, stroke.shape)
                                 }
                             }
-                            case .Erase : {
-                                erase_point(point, active_layer.render_texture, stroke.size, stroke.shape)
-                            }
+        
                         }
-    
                     }
+                    rl.EndTextureMode()
+        
                 }
-                rl.EndTextureMode()
-    
             }
         }
     
@@ -246,8 +258,8 @@ painting_rect_render :: proc(app: ^App) {
 
     } else if app.settings.app_mode == .View_3d {
     
-        app.settings.view_3d.camera_settings.position.x = 5.5 * math.cos_f32(app.settings.app_time * 0.5)
-        app.settings.view_3d.camera_settings.position.z = 5.5 * math.sin_f32(app.settings.app_time * 0.5) 
+        app.settings.view_3d.camera_settings.position.x = 5.5 * math.sin_f32(app.settings.app_time * 0.5) 
+        app.settings.view_3d.camera_settings.position.z = 5.5 * math.cos_f32(app.settings.app_time * 0.5)
         app.settings.view_3d.camera.position = app.settings.view_3d.camera_settings.position
         rl.BeginTextureMode(app.settings.view_3d.in_texutre)
         rl.ClearBackground(rl.BLANK)
@@ -256,16 +268,15 @@ painting_rect_render :: proc(app: ^App) {
         }
         rl.EndTextureMode()
         rl.BeginTextureMode(app.settings.view_3d.out_texture)
-        rl.BeginMode3D(app.settings.view_3d.camera)
-      
-        rl.ClearBackground(rl.Color{175,175,175,220})
         
+        rl.BeginMode3D(app.settings.view_3d.camera)
+        rl.ClearBackground(rl.Color{175,175,175,220})
         app.settings.view_3d.view_plane_model.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture = app.settings.view_3d.in_texutre.texture
         rlgl.DisableBackfaceCulling()
         rl.DrawModelEx(
             app.settings.view_3d.view_plane_model,
             rl.Vector3{0,0, 0},
-            rl.Vector3 {0.5, 0, 0},
+            rl.Vector3 {1, 0, 0},
             90,
             1.,
             rl.WHITE,
@@ -275,7 +286,21 @@ painting_rect_render :: proc(app: ^App) {
         rl.EndMode3D()
         rl.EndTextureMode()
 
-        rl.DrawTexture(app.settings.view_3d.out_texture.texture, i32(app.settings.paint_rect.container_rect.x), i32(app.settings.paint_rect.container_rect.y), rl.WHITE)
+        // rl.DrawTexture(app.settings.view_3d.out_texture.texture, i32(app.settings.paint_rect.container_rect.x), i32(app.settings.paint_rect.container_rect.y), rl.WHITE)
+        rl.DrawTexturePro(
+            app.settings.view_3d.out_texture.texture , 
+            {
+                x = 0,
+                y = 0,
+                width = f32(app.settings.view_3d.out_texture.texture.width),
+                height = f32(app.settings.view_3d.out_texture.texture.height) 
+            },
+            app.settings.paint_rect.container_rect,
+            0,
+            0,
+            rl.WHITE
+        )
+        
     }
 }
 
