@@ -414,6 +414,7 @@ size_widget_render :: proc(font: rl.Font, settings: ^App_settings) {
         append(&settings.layers, Canvas_layer {
             name = "Layer_1", render_texture = texture
         })
+        settings.active_layer = 0
         settings.size_widget.is_active = false
         settings.ui_scene = .None
     }
