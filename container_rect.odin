@@ -204,22 +204,24 @@ painting_rect_render :: proc(app: ^App) {
         )
         rl.DrawRectangleRec(paint_rect, rl.Color {255,255,255, 150})
         for layer in app.settings.layers {
-            source := rl.Rectangle {
-                x = 0,
-                y =  0,
-                width= f32(layer.render_texture.texture.width),
-                height = -f32(layer.render_texture.texture.height)
+            if layer.visible {
+                source := rl.Rectangle {
+                    x = 0,
+                    y =  0,
+                    width= f32(layer.render_texture.texture.width),
+                    height = -f32(layer.render_texture.texture.height)
+                }
+               
+                
+                rl.DrawTexturePro(
+                    layer.render_texture.texture,
+                    source,
+                    paint_rect,
+                    0,
+                    0,
+                    rl.WHITE,
+                )
             }
-           
-            
-            rl.DrawTexturePro(
-                layer.render_texture.texture,
-                source,
-                paint_rect,
-                0,
-                0,
-                rl.WHITE,
-            )
             
         }
         // ui draw a shape at the cursor

@@ -90,7 +90,7 @@ app_init :: proc () -> App {
     container_rect := rl.Rectangle {x = color_pallete_rect.x + color_pallete_rect.width + 10., y = UI_PAINTING_CONTAINER_START.y, width = 960, height = 720}
     tools_rect := rl.Rectangle {x = container_rect.x , y = container_rect.y + container_rect.height + 10, width = 960, height = 100}
     painting_rect := rl.Rectangle{x = container_rect.x + 10, y = container_rect.y + 10, width = canvas_size.x, height = canvas_size.y}
-    layers_display_rect := rl.Rectangle{x = container_rect.x + container_rect.width, y = 50, width = 100, height = 720}
+    layers_display_rect := rl.Rectangle{x = container_rect.x + container_rect.width, y = 50, width = 180, height = 720}
     brush_color := rl.BLACK
     app := App {
         font = rl.LoadFont("assets/Roboto-Regular.ttf"),
@@ -141,7 +141,8 @@ app_init :: proc () -> App {
     }
     texture := rl.LoadRenderTexture(i32(painting_rect.width), i32(painting_rect.height))
     append(&app.settings.layers, Canvas_layer {
-        name = "Layer_1", render_texture = texture
+        name = "Layer_1", render_texture = texture,
+        visible = true
     })
     return app
 }
@@ -154,10 +155,12 @@ app_update:: proc(app: ^App, dt: f32) {
     if rl.IsKeyPressed(.D) {
         app.settings.is_debug = !app.settings.is_debug 
     }
+    
+    
     painting_rect_update(app)
     painting_rect_render(app)
     app_bar_render(app.font, &app.settings)
-
+    
     if app.settings.app_mode == .Paint {
         color_pallete_render(app.font, &app.settings.color_pallete)
         layers_display_render(app.font, &app.settings)
@@ -412,7 +415,9 @@ size_widget_render :: proc(font: rl.Font, settings: ^App_settings) {
         ))
         texture := rl.LoadRenderTexture(i32(res_width), i32(res_height))
         append(&settings.layers, Canvas_layer {
-            name = "Layer_1", render_texture = texture
+            name = "Layer_1", 
+            render_texture = texture,
+            visible = true
         })
         settings.active_layer = 0
         settings.size_widget.is_active = false
