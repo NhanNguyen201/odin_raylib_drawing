@@ -277,17 +277,11 @@ painting_rect_render :: proc(app: ^App) {
         app.settings.view_3d.camera_settings.position.x = app.settings.view_3d.distance * math.sin_f32(app.settings.app_time * 0.5) 
         app.settings.view_3d.camera_settings.position.z = app.settings.view_3d.distance * math.cos_f32(app.settings.app_time * 0.5)
         app.settings.view_3d.camera.position = app.settings.view_3d.camera_settings.position
-        rl.BeginTextureMode(app.settings.view_3d.in_texutre)
-        rl.ClearBackground(rl.BLANK)
-        for layer in app.settings.layers {
-            rl.DrawTextureRec(layer.render_texture.texture, {x =0, y =0, width = f32(layer.render_texture.texture.width), height = -f32(layer.render_texture.texture.height)}, 0, rl.WHITE)
-        }
-        rl.EndTextureMode()
+        
         rl.BeginTextureMode(app.settings.view_3d.out_texture)
         
         rl.BeginMode3D(app.settings.view_3d.camera)
         rl.ClearBackground(rl.Color{175,175,175,220})
-        app.settings.view_3d.view_plane_model.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture = app.settings.view_3d.in_texutre.texture
         rlgl.DisableBackfaceCulling()
         rl.DrawModelEx(
             app.settings.view_3d.view_plane_model,
@@ -376,4 +370,16 @@ erase_point :: proc(p: rl.Vector2, texture: rl.RenderTexture2D, brush_size: f32,
                 
     rl.EndBlendMode()
     rl.EndTextureMode()
+}
+
+draw_3d_plane_texture :: proc(in_texture: rl.RenderTexture2D, layers: []Canvas_layer, model: ^rl.Model) {
+    rl.BeginTextureMode(in_texture)
+    rl.ClearBackground(rl.BLANK)
+    for layer in layers {
+        rl.DrawTextureRec(layer.render_texture.texture, {x =0, y =0, width = f32(layer.render_texture.texture.width), height = -f32(layer.render_texture.texture.height)}, 0, rl.WHITE)
+    }
+    rl.EndTextureMode()
+
+    model.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture = in_texture.texture
+
 }

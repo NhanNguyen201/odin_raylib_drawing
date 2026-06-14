@@ -173,6 +173,7 @@ app_update:: proc(app: ^App, dt: f32) {
     ui_render(app.font, &app.settings)
     if rl.IsKeyPressed(.TAB) {
         if app.settings.app_mode == .Paint {
+            draw_3d_plane_texture(app.settings.view_3d.in_texutre, app.settings.layers[:], &app.settings.view_3d.view_plane_model)
             app.settings.app_mode = .View_3d
         } else if app.settings.app_mode == .View_3d {
             app.settings.app_mode = .Paint
@@ -252,6 +253,9 @@ app_bar_render :: proc(font: rl.Font, settings: ^App_settings) {
             if is_hovered {
                 rl.DrawRectangleRec({x = mode_button_rect.x , y = mode_button_rect.y + 5, width = mode_button_rect.width, height = mode_button_rect.height - 10}, rl.BLACK)
                 if rl.IsMouseButtonPressed(.LEFT) {
+                    if settings.app_mode == .Paint {
+                        draw_3d_plane_texture(settings.view_3d.in_texutre, settings.layers[:], &settings.view_3d.view_plane_model)
+                    }
                     settings.app_mode = mode
                 }
             }
