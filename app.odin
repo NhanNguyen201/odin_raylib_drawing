@@ -65,6 +65,7 @@ UI_scenes :: enum {
 }
 
 View_3d :: struct {
+    distance : f32 ,
     out_texture: rl.RenderTexture2D,
     in_texutre: rl.RenderTexture2D,
     camera: rl.Camera3D,
@@ -91,12 +92,14 @@ app_init :: proc () -> App {
     tools_rect := rl.Rectangle {x = container_rect.x , y = container_rect.y + container_rect.height + 10, width = 960, height = 100}
     painting_rect := rl.Rectangle{x = container_rect.x + 10, y = container_rect.y + 10, width = canvas_size.x, height = canvas_size.y}
     layers_display_rect := rl.Rectangle{x = container_rect.x + container_rect.width, y = 50, width = 180, height = 720}
+    view_3d_distance : f32 = 5. 
     brush_color := rl.BLACK
     app := App {
         font = rl.LoadFont("assets/Roboto-Regular.ttf"),
         settings = {
             container_rect = container_rect,
             view_3d = {
+                distance = view_3d_distance,
                 out_texture = rl.LoadRenderTexture(i32(container_rect.width), i32(container_rect.height)),
                 in_texutre = rl.LoadRenderTexture(i32(painting_rect.width), i32(painting_rect.height)),
                 view_plane_model = rl.LoadModelFromMesh(rl.GenMeshPlane(
@@ -108,7 +111,7 @@ app_init :: proc () -> App {
                 camera_settings = {position = {0, 0, 25.}},
                 camera = {
                     fovy = 45,
-                    position = {0, 0, 25.},
+                    position = {0, 0, view_3d_distance},
                     projection = .PERSPECTIVE,
                     target = rl.Vector3{0,0,0},
                     up = rl.Vector3{0,1,0}

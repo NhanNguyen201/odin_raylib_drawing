@@ -182,6 +182,19 @@ painting_rect_update :: proc(app : ^App) {
     
                 app.settings.camera.target += (mouse_world_before - mouse_world_after) * rl.GetFrameTime() * 20
             }
+            
+            
+        }
+    } else if app.settings.app_mode == .View_3d {
+        wheel := rl.GetMouseWheelMove()
+
+        if wheel != 0 {
+            
+            app.settings.view_3d.distance += wheel  * rl.GetFrameTime() * 5.
+
+            
+
+            
         }
     }
 
@@ -259,8 +272,10 @@ painting_rect_render :: proc(app: ^App) {
 
     } else if app.settings.app_mode == .View_3d {
     
-        app.settings.view_3d.camera_settings.position.x = 5.5 * math.sin_f32(app.settings.app_time * 0.5) 
-        app.settings.view_3d.camera_settings.position.z = 5.5 * math.cos_f32(app.settings.app_time * 0.5)
+        
+            
+        app.settings.view_3d.camera_settings.position.x = app.settings.view_3d.distance * math.sin_f32(app.settings.app_time * 0.5) 
+        app.settings.view_3d.camera_settings.position.z = app.settings.view_3d.distance * math.cos_f32(app.settings.app_time * 0.5)
         app.settings.view_3d.camera.position = app.settings.view_3d.camera_settings.position
         rl.BeginTextureMode(app.settings.view_3d.in_texutre)
         rl.ClearBackground(rl.BLANK)
