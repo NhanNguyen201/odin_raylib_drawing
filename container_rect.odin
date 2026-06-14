@@ -43,16 +43,16 @@ painting_rect_update :: proc(app : ^App) {
         brush_color := get_color_from_pallete(app.settings.color_pallete.colors[:], app.settings.color_pallete.active_color)
         
         if app.settings.ui_scene == .None {
-
-            if app.settings.paint_mode == .Drawing {
-                if rl.IsMouseButtonDown(.LEFT) && is_rect_hover(mouse, app.settings.paint_rect.rect) && is_rect_hover(rl.GetMousePosition(), app.settings.paint_rect.container_rect){
-                    if !app.settings.is_mouse_down {
-                        app.settings.is_mouse_down = true
-                    } 
+            if app.settings.paint_mode == .Drawing   {
+                if rl.IsMouseButtonPressed(.LEFT) && is_rect_hover(mouse, app.settings.paint_rect.rect) && is_rect_hover(rl.GetMousePosition(), app.settings.paint_rect.container_rect) {              
+                    app.settings.is_mouse_down = true
+                }
+    
+                if app.settings.is_mouse_down {
                     draw_pos := mouse - {app.settings.paint_rect.rect.x, app.settings.paint_rect.rect.y}
-                   
+                    
                     append(&app.settings.current_stroke.points,  draw_pos)
-                 
+                    
                     rl.BeginTextureMode(active_layer.render_texture)
                     points := app.settings.current_stroke.points
                     
@@ -66,11 +66,9 @@ painting_rect_update :: proc(app : ^App) {
                     }
         
                         
-                      
+                        
                     rl.EndTextureMode()
-                            
                 }
-            
                 if rl.IsMouseButtonReleased(.LEFT) && app.settings.is_mouse_down {
                     app.settings.is_mouse_down = false
                     
@@ -85,11 +83,12 @@ painting_rect_update :: proc(app : ^App) {
                     app.settings.current_stroke = Stroke {}
                 }
                 
-            } else if app.settings.paint_mode == .Erase {
-                if rl.IsMouseButtonDown(.LEFT) && is_rect_hover(mouse, app.settings.paint_rect.rect){
-                    if !app.settings.is_mouse_down {
-                        app.settings.is_mouse_down = true
-                    } 
+            } else if app.settings.paint_mode == .Erase  {
+                if rl.IsMouseButtonPressed(.LEFT) && is_rect_hover(mouse, app.settings.paint_rect.rect) {
+                    app.settings.is_mouse_down = true           
+                }
+                if app.settings.is_mouse_down {
+                    
                     canvas_mouse := mouse - rl.Vector2{app.settings.paint_rect.rect.x, app.settings.paint_rect.rect.y}
                     erase_point(canvas_mouse, active_layer.render_texture, app.settings.brush_size.val, app.settings.brush_shape)
                     append(&app.settings.current_stroke.points,  canvas_mouse)
