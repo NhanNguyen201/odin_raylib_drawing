@@ -27,7 +27,7 @@ layers_display_render :: proc(font: rl.Font, app_settings: ^App_settings) {
         rl.ClearBackground(rl.BLANK)
         rl.EndTextureMode()
         append(&app_settings.layers, Canvas_layer {
-            name = "new_layer",
+            name = fmt.ctprintf("Layer %d", len(app_settings.layers) + 1),
             render_texture = new_texture,
             visible = true
         })
