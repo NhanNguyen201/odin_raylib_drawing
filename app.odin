@@ -77,7 +77,7 @@ View_3d_camera_settings:: struct {
 }
 
 Canvas_layer :: struct {
-    name: string,
+    name: cstring,
     opacity: f32,
     visible: bool,
     render_texture:  rl.RenderTexture2D,
