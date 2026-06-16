@@ -190,7 +190,7 @@ painting_rect_update :: proc(app : ^App) {
 
         if wheel != 0 {
             
-            app.settings.view_3d.distance += wheel  * rl.GetFrameTime() * 5.
+            app.settings.view_3d.distance = math.clamp(app.settings.view_3d.distance +  wheel  * rl.GetFrameTime() * 5., 0.2, 20)
 
             
 
@@ -274,20 +274,25 @@ painting_rect_render :: proc(app: ^App) {
     
         
             
-        app.settings.view_3d.camera_settings.position.x = app.settings.view_3d.distance * math.sin_f32(app.settings.app_time * 0.5) 
-        app.settings.view_3d.camera_settings.position.z = app.settings.view_3d.distance * math.cos_f32(app.settings.app_time * 0.5)
+        app.settings.view_3d.camera_settings.position.z = app.settings.view_3d.distance 
         app.settings.view_3d.camera.position = app.settings.view_3d.camera_settings.position
         
+        
+        app.settings.view_3d.view_plane_model.transform = rl.MatrixRotateXYZ({
+            rl.DEG2RAD * 90,
+            rl.DEG2RAD * 0,
+            rl.DEG2RAD * app.settings.app_time  * 25,
+        })
+
         rl.BeginTextureMode(app.settings.view_3d.out_texture)
         
         rl.BeginMode3D(app.settings.view_3d.camera)
         rl.ClearBackground(rl.Color{175,175,175,220})
         rlgl.DisableBackfaceCulling()
-        rl.DrawModelEx(
+
+        rl.DrawModel(
             app.settings.view_3d.view_plane_model,
             rl.Vector3{0,0, 0},
-            rl.Vector3 {1, 0, 0},
-            90,
             1.,
             rl.WHITE,
         )
