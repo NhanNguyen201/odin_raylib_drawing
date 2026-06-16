@@ -82,8 +82,10 @@ layers_display_render :: proc(font: rl.Font, app_settings: ^App_settings) {
                         delete(stroke.points)
                     }
                     clear(&layer.strokes)
-                    rl.UnloadRenderTexture(layer.render_texture)
-                    layer.render_texture = rl.LoadRenderTexture(i32(app_settings.paint_rect.rect.width), i32(app_settings.paint_rect.rect.height))
+                    rl.BeginTextureMode(layer.render_texture)
+                    rl.ClearBackground(rl.BLANK)
+                    rl.EndTextureMode()
+                    // layer.render_texture = rl.LoadRenderTexture(i32(app_settings.paint_rect.rect.width), i32(app_settings.paint_rect.rect.height))
                 }
             }
         }
