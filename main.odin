@@ -65,11 +65,18 @@ main :: proc() {
         rl.BeginDrawing()
         rl.ClearBackground(UI_DARK_25_COLOR)
         container_rect := app.settings.container_rect
-        rl.DrawRectangleRec(container_rect, UI_DARK_75_COLOR)
-        for col in 0..<int(math.floor_f32(container_rect.width / 50)) {
-            for row in 0..<int(math.floor_f32(container_rect.height / 50)) {
+        rl.DrawRectangleRec(container_rect.rect, UI_DARK_75_COLOR)
+        for col in 0..<int(math.floor_f32(container_rect.rect.width / 50) + 1 ) {
+            for row in 0..<int(math.floor_f32(container_rect.rect.height / 50) + 1) {
                 if col % 2 == row % 2 {
-                    rl.DrawRectangleV({f32(col) * 50 + container_rect.x, f32(row) * 50 + container_rect.y}, 50, rl.BLACK)
+                    rect := rl.Rectangle { x = f32(col) * 50 + container_rect.rect.x, y = f32(row) * 50 + container_rect.rect.y, width = 50, height = 50}
+                    if rect.x + rect.width >= container_rect.rect.x + container_rect.rect.width {
+                        rect.width = container_rect.rect.x + container_rect.rect.width - rect.x
+                    }
+                    if rect.y + rect.height >=container_rect.rect.y +  container_rect.rect.height {
+                        rect.height = container_rect.rect.y +container_rect.rect.height - rect.y
+                    }
+                    rl.DrawRectangleRec(rect, rl.BLACK)
                 }
             }
         }
