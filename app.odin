@@ -35,7 +35,7 @@ App_settings:: struct {
     camera: rl.Camera2D,
     camera_zoom: f32,
     canvas_size: rl.Vector2,
-    container_rect: rl.Rectangle,
+    container_rect: Container_rect,
     paint_rect : Draggable_rect,
     layers_rect: rl.Rectangle,
     tools_rect: rl.Rectangle,
@@ -97,7 +97,9 @@ app_init :: proc () -> App {
     app := App {
         font = rl.LoadFont("assets/Roboto-Regular.ttf"),
         settings = {
-            container_rect = container_rect,
+            container_rect = {
+                rect = container_rect
+            },
             view_3d = {
                 distance = view_3d_distance,
                 out_texture = rl.LoadRenderTexture(i32(container_rect.width), i32(container_rect.height)),
@@ -126,7 +128,6 @@ app_init :: proc () -> App {
             paint_rect = {
                 rect = painting_rect,
                 
-                container_rect = container_rect
             },
             layers_rect = layers_display_rect,
             tools_rect = tools_rect,
@@ -159,6 +160,7 @@ app_update:: proc(app: ^App, dt: f32) {
         app.settings.is_debug = !app.settings.is_debug 
     }
     
+    rl.DrawRectangleLinesEx(app.settings.container_rect.rect, 2.5, rl.Color{125,125,125,255})
     
     painting_rect_update(app)
     painting_rect_render(app)

@@ -14,15 +14,30 @@ get_color_from_pallete :: proc (colors: []Draw_color, idx: int) -> rl.Color {
     return res ? colors[idx].color : rl.BLACK
 }
 
+Container_resize_state :: enum {
+    None,
+    Right, 
+    Bottom
+}
+
+Container_resize :: struct {
+    active: Container_resize_state,
+    dragging: bool,
+}
+
+Container_rect :: struct {
+    rect : rl.Rectangle,
+    resize : Container_resize
+}
+
 Draggable_rect :: struct {
     rect: rl.Rectangle,
-    container_rect: rl.Rectangle,
     is_dragged: bool,
     click_pos: rl.Vector2,
 }
 
 Text_Input :: struct {
-    buf: [5]u8,
+    buf: [4]u8,
     len: int,
     is_active: bool,
 }
@@ -41,10 +56,10 @@ painting_rect_update :: proc(app : ^App) {
         )
         active_layer := &app.settings.layers[app.settings.active_layer]
         brush_color := get_color_from_pallete(app.settings.color_pallete.colors[:], app.settings.color_pallete.active_color)
-        
+        container_rect := &app.settings.container_rect
         if app.settings.ui_scene == .None {
             if app.settings.paint_mode == .Drawing   {
-                if rl.IsMouseButtonPressed(.LEFT) && is_rect_hover(mouse, app.settings.paint_rect.rect) && is_rect_hover(rl.GetMousePosition(), app.settings.paint_rect.container_rect) {              
+                if rl.IsMouseButtonPressed(.LEFT) && is_rect_hover(mouse, app.settings.paint_rect.rect) && is_rect_hover(rl.GetMousePosition(), app.settings.container_rect.rect) {              
                     app.settings.is_mouse_down = true
                 }
     
@@ -142,6 +157,53 @@ painting_rect_update :: proc(app : ^App) {
         
                 }
             }
+            right_side_rect := rl.Rectangle {
+                x = container_rect.rect.x + container_rect.rect.width - 3,
+                y = container_rect.rect.y + 3,
+                width = 6,
+                height = container_rect.rect.height - 6,
+            }
+            bottom_side_rect := rl.Rectangle {
+                x = container_rect.rect.x + 3,
+                y = container_rect.rect.y + container_rect.rect.height - 3,
+                width = container_rect.rect.width - 6,
+                height = 6,
+            }
+            if is_rect_hover(rl.GetMousePosition(), right_side_rect) {
+                rl.DrawRectangleRec(right_side_rect, rl.BLUE)
+                if rl.IsMouseButtonPressed(.LEFT) {
+                    container_rect.resize.active = .Right
+                    container_rect.resize.dragging = true
+                }
+            }
+             if is_rect_hover(rl.GetMousePosition(), bottom_side_rect) {
+                rl.DrawRectangleRec(bottom_side_rect, rl.BLUE)
+                if rl.IsMouseButtonPressed(.LEFT) {
+                    container_rect.resize.active = .Bottom
+                    container_rect.resize.dragging = true
+                }
+            }
+            
+            if container_rect.resize.dragging  {
+                @static min_size : f32 = 100
+                delta := rl.GetMouseDelta()
+                switch container_rect.resize.active {
+                    case .Right : {
+                        container_rect.rect.width = max(min_size, container_rect.rect.width + delta.x)
+                        app.settings.layers_rect.x += container_rect.rect.width > min_size ? delta.x : 0
+                    }
+                    case .Bottom: {
+                        container_rect.rect.height = max( min_size, container_rect.rect.height + delta.y)
+                        app.settings.tools_rect.y += container_rect.rect.height > min_size ? delta.y : 0
+                    }
+
+                    case .None: 
+                }
+                if rl.IsMouseButtonReleased(.LEFT) {
+                    container_rect.resize.active = .None
+                    container_rect.resize.dragging = false
+                }
+            }
         }
     
         if app.settings.is_debug {
@@ -153,7 +215,7 @@ painting_rect_update :: proc(app : ^App) {
         
             // }
         }
-        if is_rect_hover(rl.GetMousePosition(), app.settings.container_rect) {
+        if is_rect_hover(rl.GetMousePosition(), app.settings.container_rect.rect) {
             if rl.IsKeyDown(.KP_ADD) {
                 app.settings.brush_size.val += rl.GetFrameTime()
             }
@@ -204,15 +266,14 @@ painting_rect_update :: proc(app : ^App) {
 painting_rect_render :: proc(app: ^App) {
     if app.settings.app_mode == .Paint {
         paint_rect := app.settings.paint_rect.rect
-    
-        rl.DrawRectangleLinesEx(app.settings.container_rect, 2.5, rl.Color{125,125,125,255})
+        container_rect := app.settings.container_rect
         rl.BeginMode2D(app.settings.camera)
        
         rl.BeginScissorMode(
-            i32(app.settings.container_rect.x),
-            i32(app.settings.container_rect.y),
-            i32(app.settings.container_rect.width),
-            i32(app.settings.container_rect.height),
+            i32(container_rect.rect.x),
+            i32(container_rect.rect.y),
+            i32(container_rect.rect.width),
+            i32(container_rect.rect.height),
         )
         rl.DrawRectangleRec(paint_rect, rl.Color {255,255,255, 150})
         for layer in app.settings.layers {
@@ -268,7 +329,7 @@ painting_rect_render :: proc(app: ^App) {
         }
         rl.EndScissorMode()
         rl.EndMode2D()
-        dragged_rect_update(&app.settings.paint_rect, &app.settings.camera)
+        dragged_rect_update(&app.settings.paint_rect, app.settings.container_rect.rect, &app.settings.camera)
 
     } else if app.settings.app_mode == .View_3d {
     
@@ -310,7 +371,7 @@ painting_rect_render :: proc(app: ^App) {
                 width = f32(app.settings.view_3d.out_texture.texture.width),
                 height = f32(app.settings.view_3d.out_texture.texture.height) 
             },
-            app.settings.paint_rect.container_rect,
+            app.settings.container_rect.rect,
             0,
             0,
             rl.WHITE

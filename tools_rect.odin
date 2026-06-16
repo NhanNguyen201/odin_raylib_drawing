@@ -92,13 +92,13 @@ dragged_value_from_rect_update :: proc(slider_comp: ^Slider_value) {
     }
 } 
 
-dragged_rect_update :: proc(drag_rect: ^Draggable_rect, camera: ^rl.Camera2D) {
+dragged_rect_update :: proc(drag_rect: ^Draggable_rect, container_rect: rl.Rectangle , camera: ^rl.Camera2D) {
     mouse := rl.GetMousePosition()
     canvas_mouse := rl.GetScreenToWorld2D(
         mouse,
         camera^,
     )
-    if is_rect_hover(mouse, drag_rect.container_rect) && rl.IsMouseButtonPressed(.MIDDLE) {
+    if is_rect_hover(mouse, container_rect) && rl.IsMouseButtonPressed(.MIDDLE) {
         drag_rect.is_dragged = true
     }
     if drag_rect.is_dragged && rl.IsMouseButtonDown(.MIDDLE) {
