@@ -17,7 +17,7 @@ UI_PAINTING_CONTAINER_START : rl.Vector2 : {80, 50}
 App :: struct {
     settings: App_settings,
     paint_settings: Paint_settings,
-    view_setting: View_settings,
+    view_settings: View_settings,
     font: rl.Font
 }
 
@@ -127,7 +127,7 @@ app_init :: proc () -> App {
                 component_rect = color_pallete_rect
             }
         },
-        view_setting = {
+        view_settings = {
             distance = view_3d_distance,
             out_texture = rl.LoadRenderTexture(i32(container_rect.width), i32(container_rect.height)),
             in_texutre = rl.LoadRenderTexture(i32(painting_rect.width), i32(painting_rect.height)),
@@ -171,8 +171,8 @@ app_update:: proc(app: ^App, dt: f32) {
     
     rl.DrawRectangleLinesEx(app.paint_settings.container_rect.rect, 2.5, rl.Color{125,125,125,255})
     
-    painting_rect_update(&app.paint_settings, &app.view_setting, &app.settings)
-    painting_rect_render(&app.paint_settings, &app.view_setting, &app.settings)
+    painting_rect_update(&app.paint_settings, &app.view_settings, &app.settings)
+    painting_rect_render(&app.paint_settings, &app.view_settings, &app.settings)
     app_bar_render(app.font, app)
     
     if app.settings.app_mode == .Paint {
@@ -184,7 +184,7 @@ app_update:: proc(app: ^App, dt: f32) {
     ui_render(app.font, app)
     if rl.IsKeyPressed(.TAB) {
         if app.settings.app_mode == .Paint {
-            draw_3d_plane_texture(app.view_setting.in_texutre, app.paint_settings.layers[:], &app.view_setting.view_plane_model)
+            draw_3d_plane_texture(app.view_settings.in_texutre, app.paint_settings.layers[:], &app.view_settings.view_plane_model)
             app.settings.app_mode = .View_3d
         } else if app.settings.app_mode == .View_3d {
             app.settings.app_mode = .Paint
@@ -265,7 +265,7 @@ app_bar_render :: proc(font: rl.Font, app: ^App) {
                 rl.DrawRectangleRec({x = mode_button_rect.x , y = mode_button_rect.y + 5, width = mode_button_rect.width, height = mode_button_rect.height - 10}, rl.BLACK)
                 if rl.IsMouseButtonPressed(.LEFT) {
                     if app.settings.app_mode == .Paint {
-                        draw_3d_plane_texture(app.view_setting.in_texutre, app.paint_settings.layers[:], &app.view_setting.view_plane_model)
+                        draw_3d_plane_texture(app.view_settings.in_texutre, app.paint_settings.layers[:], &app.view_settings.view_plane_model)
                     }
                     app.settings.app_mode = mode
                 }
@@ -410,8 +410,8 @@ size_widget_render :: proc(font: rl.Font, app: ^App) {
             rl.UnloadRenderTexture(layer.render_texture)
         }
         clear(&app.paint_settings.layers)
-        rl.UnloadRenderTexture(app.view_setting.in_texutre)
-        rl.UnloadRenderTexture(app.view_setting.out_texture)
+        rl.UnloadRenderTexture(app.view_settings.in_texutre)
+        rl.UnloadRenderTexture(app.view_settings.out_texture)
 
         // re init
         parse_width, _ := strconv.parse_uint(string(width_input.buf[:width_input.len]))
@@ -422,10 +422,10 @@ size_widget_render :: proc(font: rl.Font, app: ^App) {
         res_height := max(5., f32(parse_height))
         app.paint_settings.paint_rect.rect.height = res_height
 
-        app.view_setting.in_texutre = rl.LoadRenderTexture(i32(parse_width), i32(parse_height))
-        app.view_setting.out_texture = rl.LoadRenderTexture(i32(parse_width), i32(parse_height))
-        rl.UnloadModel(app.view_setting.view_plane_model)
-        app.view_setting.view_plane_model = rl.LoadModelFromMesh(rl.GenMeshPlane (
+        app.view_settings.in_texutre = rl.LoadRenderTexture(i32(parse_width), i32(parse_height))
+        app.view_settings.out_texture = rl.LoadRenderTexture(i32(parse_width), i32(parse_height))
+        rl.UnloadModel(app.view_settings.view_plane_model)
+        app.view_settings.view_plane_model = rl.LoadModelFromMesh(rl.GenMeshPlane (
              4,
             res_height / res_width * 4,
             1,
