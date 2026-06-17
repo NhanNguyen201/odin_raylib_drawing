@@ -3,14 +3,14 @@ package main
 import "core:fmt"
 import rl "vendor:raylib"
 
-layers_display_render :: proc(font: rl.Font, app_settings: ^App_settings) {
+layers_display_render :: proc(font: rl.Font, paint_settings: ^Paint_settings) {
     @static padding : f32 = 10
     @static layers_title := "Layers"
     @static layer_rect_h : f32 = 25.
     @static layer_rect_w : f32 = 150.
     @static text_spacing: f32 = 0.2
     @static text_fontsize :f32 = 20
-    display_rect := app_settings.layers_rect
+    display_rect := paint_settings.layers_rect
     title_rect := rl.Rectangle {x = display_rect.x + padding, y = display_rect.y, width = display_rect.width, height = 30}
     rl.DrawRectangleRec(title_rect, rl.Color {175,175,175, 255})
     fmt_title := fmt.ctprint(layers_title)
@@ -22,19 +22,19 @@ layers_display_render :: proc(font: rl.Font, app_settings: ^App_settings) {
     rl.DrawRectangleLinesEx(add_rect, 1., rl.BLACK)
     rl.DrawTextEx(font, fmt.ctprint("+"), {add_rect.x + 5, add_rect.y + add_rect.height / 2 - text_fontsize / 2}, text_fontsize, text_spacing, rl.BLACK)
     if is_add_rect_hovered && rl.IsMouseButtonPressed(.LEFT){
-        new_texture := rl.LoadRenderTexture(i32(app_settings.paint_rect.rect.width), i32(app_settings.paint_rect.rect.height))
+        new_texture := rl.LoadRenderTexture(i32(paint_settings.paint_rect.rect.width), i32(paint_settings.paint_rect.rect.height))
         rl.BeginTextureMode(new_texture)
         rl.ClearBackground(rl.BLANK)
         rl.EndTextureMode()
-        append(&app_settings.layers, Canvas_layer {
-            name = fmt.ctprintf("Layer %d", len(app_settings.layers) + 1),
+        append(&paint_settings.layers, Canvas_layer {
+            name = fmt.ctprintf("Layer %d", len(paint_settings.layers) + 1),
             render_texture = new_texture,
             visible = true
         })
 
-        app_settings.active_layer = len(app_settings.layers) - 1
+        paint_settings.active_layer = len(paint_settings.layers) - 1
     }
-    for &layer, idx in app_settings.layers {
+    for &layer, idx in paint_settings.layers {
         layer_rect := rl.Rectangle {x = title_rect.x + 5, y = title_rect.y + title_rect.height + 20 + (5. + layer_rect_h) * f32(idx), height = layer_rect_h, width = layer_rect_w}
         remove_rect := rl.Rectangle {x = layer_rect.x + layer_rect.width - 25, y = layer_rect.y + 2.5, width = 20, height = 20}
         visible_rect := rl.Rectangle {x = layer_rect.x + layer_rect.width - 50, y = layer_rect.y + 2.5, width = 20, height = 20}
@@ -43,11 +43,11 @@ layers_display_render :: proc(font: rl.Font, app_settings: ^App_settings) {
         is_visible_hovered := is_rect_hover(rl.GetMousePosition(), visible_rect)
         is_remove_hovered := is_rect_hover(rl.GetMousePosition(), remove_rect) 
         rl.DrawRectangleRounded(layer_rect, 0.25, 3, is_hover ? rl.Color {150, 150, 255, 255} : rl.Color {200,200,200, 255})
-        if idx == app_settings.active_layer {
+        if idx == paint_settings.active_layer {
             rl.DrawRectangleRoundedLinesEx(layer_rect, 0.25, 3, 2, rl.WHITE)
         }
         if is_hover && rl.IsMouseButtonPressed(.LEFT) && !is_remove_hovered && !is_visible_hovered{
-            app_settings.active_layer = idx
+            paint_settings.active_layer = idx
         }
         fmt_layer_name := fmt.ctprint(layer.name)
         masured_title, _, _ := get_text_to_ui(font, fmt_layer_name, text_fontsize, text_spacing)
@@ -65,18 +65,18 @@ layers_display_render :: proc(font: rl.Font, app_settings: ^App_settings) {
         if rl.IsMouseButtonPressed(.LEFT) {
             mouse := rl.GetMousePosition()
             if is_rect_hover(mouse, remove_rect) {
-                if len(app_settings.layers) > 1 {
-                    if app_settings.active_layer >= idx  || app_settings.active_layer == len(app_settings.layers) - 1 {
-                        app_settings.active_layer -= 1
+                if len(paint_settings.layers) > 1 {
+                    if paint_settings.active_layer >= idx  || paint_settings.active_layer == len(paint_settings.layers) - 1 {
+                        paint_settings.active_layer -= 1
                     }
                     for stroke in layer.strokes {
                         delete(stroke.points)
                     }
                     delete(layer.strokes)
                     rl.UnloadRenderTexture(layer.render_texture)
-                    ordered_remove(&app_settings.layers, idx)
-                } else if len(app_settings.layers) == 1 {
-                    app_settings.active_layer = 0
+                    ordered_remove(&paint_settings.layers, idx)
+                } else if len(paint_settings.layers) == 1 {
+                    paint_settings.active_layer = 0
 
                     for stroke in layer.strokes {
                         delete(stroke.points)
@@ -85,7 +85,7 @@ layers_display_render :: proc(font: rl.Font, app_settings: ^App_settings) {
                     rl.BeginTextureMode(layer.render_texture)
                     rl.ClearBackground(rl.BLANK)
                     rl.EndTextureMode()
-                    // layer.render_texture = rl.LoadRenderTexture(i32(app_settings.paint_rect.rect.width), i32(app_settings.paint_rect.rect.height))
+                    // layer.render_texture = rl.LoadRenderTexture(i32(paint_settings.paint_rect.rect.width), i32(paint_settings.paint_rect.rect.height))
                 }
             }
         }

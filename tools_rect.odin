@@ -12,19 +12,19 @@ Slider_value :: struct {
     click_pos: rl.Vector2
 }
 
-tools_rect_render :: proc(font: rl.Font, settings : ^App_settings) {
+tools_rect_render :: proc(font: rl.Font, paint_settings : ^Paint_settings) {
     @static button_size :rl.Vector2 = {60, 30}
     @static paint_mode_button_size : rl.Vector2 = {70, 30}
     @static font_size :f32 = 20
     @static spacing :f32 = 0.25
-    ui_rect := settings.tools_rect
+    ui_rect := paint_settings.tools_rect
 
     
     // Paint mode
     for paint_mode, idx in Paint_mode {
         rect := rl.Rectangle{x = ui_rect.x  + (paint_mode_button_size.x + 5) * f32(idx), y = ui_rect.y, height = paint_mode_button_size.y, width = paint_mode_button_size.x}
         is_hovered := is_rect_hover(rl.GetMousePosition(), rect)
-        is_active := settings.paint_mode == paint_mode
+        is_active := paint_settings.paint_mode == paint_mode
         rl.DrawRectangleRounded(rect, 0.2, 5, is_active ? rl.BLACK : rl.WHITE)
         if is_active {
             rl.DrawRectangleRoundedLinesEx({x = rect.x + 2, y = rect.y + 2, width = rect.width - 4, height = rect.height - 4}, 0.2, 5, 2, rl.WHITE)
@@ -33,7 +33,7 @@ tools_rect_render :: proc(font: rl.Font, settings : ^App_settings) {
             if is_hovered {
                 rl.DrawRectangleRec({x = rect.x , y = rect.y + 5, width = rect.width, height = rect.height - 10}, rl.BLACK)
                 if rl.IsMouseButtonPressed(.LEFT) {
-                    settings.paint_mode = paint_mode
+                    paint_settings.paint_mode = paint_mode
                 }
             }
         }
@@ -44,16 +44,16 @@ tools_rect_render :: proc(font: rl.Font, settings : ^App_settings) {
     }
     brush_size_rect := rl.Rectangle {x = ui_rect.x, y = ui_rect.y + paint_mode_button_size.y + 20, width = 40, height = button_size.y}
     is_brush_size_hovered := is_rect_hover(rl.GetMousePosition(), brush_size_rect)
-    rl.DrawRectangleRounded(brush_size_rect, .25, 3, is_brush_size_hovered || settings.brush_size.is_click ? rl.Color {100,100,255, 255} : rl.WHITE)
-    fmt_tool_size := fmt.ctprintf("%.1f", settings.brush_size.val)
+    rl.DrawRectangleRounded(brush_size_rect, .25, 3, is_brush_size_hovered || paint_settings.brush_size.is_click ? rl.Color {100,100,255, 255} : rl.WHITE)
+    fmt_tool_size := fmt.ctprintf("%.1f", paint_settings.brush_size.val)
     masured_tool_size,_, _ := get_text_to_ui(font, fmt_tool_size, font_size, spacing)
     rl.DrawTextPro(font, fmt_tool_size, {brush_size_rect.x + 2.5, brush_size_rect.y + brush_size_rect.height / 2}, {0, masured_tool_size.y / 2}, 0, font_size, spacing, rl.BLACK)
-    settings.brush_size.rect = brush_size_rect
-    dragged_value_from_rect_update(&settings.brush_size)
+    paint_settings.brush_size.rect = brush_size_rect
+    dragged_value_from_rect_update(&paint_settings.brush_size)
     for tool, idx in Brush_shape {
         button_rect := rl.Rectangle {x = brush_size_rect.x + brush_size_rect.width + 5 + (5 + button_size.x) * f32(idx), y = brush_size_rect.y , width = button_size.x, height = button_size.y}
         is_hovered := is_rect_hover(rl.GetMousePosition(), button_rect)
-        is_active := tool == settings.brush_shape
+        is_active := tool == paint_settings.brush_shape
         rl.DrawRectangleRounded(button_rect, 0.2, 5, is_active ? rl.BLACK : rl.WHITE)
 
         if is_active {
@@ -63,7 +63,7 @@ tools_rect_render :: proc(font: rl.Font, settings : ^App_settings) {
             if is_hovered {
                 rl.DrawRectangleRec({x = button_rect.x , y = button_rect.y + 5, width = button_rect.width, height = button_rect.height - 10}, rl.BLACK)
                 if rl.IsMouseButtonPressed(.LEFT) {
-                    settings.brush_shape = tool
+                    paint_settings.brush_shape = tool
                 }
             }
         }

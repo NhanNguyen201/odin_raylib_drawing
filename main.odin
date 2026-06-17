@@ -27,19 +27,19 @@ main :: proc() {
     rl.SetTargetFPS(65)
     app := app_init()
     defer {
-        for &layer in app.settings.layers {
+        for &layer in app.paint_settings.layers {
             for &stroke in layer.strokes {
                 delete(stroke.points)
             }
             delete(layer.strokes)
             rl.UnloadRenderTexture(layer.render_texture)
         }
-        delete(app.settings.layers)
-        delete(app.settings.color_pallete.colors)
-        delete(app.settings.current_stroke.points)
-        rl.UnloadModel(app.settings.view_3d.view_plane_model)
-        rl.UnloadRenderTexture(app.settings.view_3d.in_texutre)
-        rl.UnloadRenderTexture(app.settings.view_3d.out_texture)
+        delete(app.paint_settings.layers)
+        delete(app.paint_settings.color_pallete.colors)
+        delete(app.paint_settings.current_stroke.points)
+        rl.UnloadModel(app.view_setting.view_plane_model)
+        rl.UnloadRenderTexture(app.view_setting.in_texutre)
+        rl.UnloadRenderTexture(app.view_setting.out_texture)
         for _, entry in track.allocation_map {
             fmt.eprintf("%v leak %v bytes \n", entry.location, entry.size)
         }
@@ -52,7 +52,7 @@ main :: proc() {
         
     }
 
-    for layer in app.settings.layers {
+    for layer in app.paint_settings.layers {
         rl.BeginTextureMode(layer.render_texture)
         rl.ClearBackground(rl.BLANK)
         rl.EndTextureMode()
@@ -64,7 +64,7 @@ main :: proc() {
         dt := rl.GetFrameTime()
         rl.BeginDrawing()
         rl.ClearBackground(UI_DARK_25_COLOR)
-        container_rect := app.settings.container_rect
+        container_rect := app.paint_settings.container_rect
         rl.DrawRectangleRec(container_rect.rect, UI_DARK_75_COLOR)
         for col in 0..<int(math.floor_f32(container_rect.rect.width / 50) + 1 ) {
             for row in 0..<int(math.floor_f32(container_rect.rect.height / 50) + 1) {
