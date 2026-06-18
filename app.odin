@@ -18,12 +18,14 @@ App :: struct {
     settings: App_settings,
     paint_settings: Paint_settings,
     view_settings: View_settings,
+    beat_system: Beat_System,
     font: rl.Font
 }
 
 App_mode :: enum {
     Paint, 
     View_3d,
+    Beat
 }
 
 Paint_mode :: enum {
@@ -99,6 +101,7 @@ app_init :: proc () -> App {
     layers_display_rect := rl.Rectangle{x = container_rect.x + container_rect.width, y = 50, width = 180, height = 720}
     view_3d_distance : f32 = 5. 
     brush_color := rl.BLACK
+    beat_volumn :f32 = 0.7
     app := App {
         font = rl.LoadFont("assets/Roboto-Regular.ttf"),
         paint_settings = {
@@ -147,12 +150,44 @@ app_init :: proc () -> App {
                 up = rl.Vector3{0,1,0}
             }
         },
-       
-        settings = {
-            
+        beat_system = {
+            bpm = BEAT_STEP_NUMB,
+            volume = beat_volumn,
+            tracks = {
+                {
+                    name = "Kick",
+                    sound = rl.LoadSound("assets/kick.wav"),
+                },
+                {
+                    name = "Snare",
+                    sound = rl.LoadSound("assets/snare.wav"),
+                },
+                {
+                    name = "Hihat",
+                    sound = rl.LoadSound("assets/hat.wav"),
+                },
+                {
+                    name = "Open hihat",
+                    sound = rl.LoadSound("assets/open_hihat.wav"),
+                },
+                {
+                    name = "Closed hihat",
+                    sound = rl.LoadSound("assets/close_hihat.wav"),
+                },
+                {
+                    name = "Snap",
+                    sound = rl.LoadSound("assets/snap.wav"),
+                },
+                {
+                    name = "Tom",
+                    sound = rl.LoadSound("assets/tom.wav"),
+                }
+            }
         }
     }
+    app.beat_system.tracks[0].steps[2] = true
     texture := rl.LoadRenderTexture(i32(painting_rect.width), i32(painting_rect.height))
+    rl.SetMasterVolume(beat_volumn)
     append(&app.paint_settings.layers, Canvas_layer {
         name = "Layer_1", render_texture = texture,
         visible = true
@@ -162,6 +197,7 @@ app_init :: proc () -> App {
 
 app_update:: proc(app: ^App, dt: f32) {
     app.settings.app_time += rl.GetFrameTime()
+    beat_engine_update(&app.beat_system)
     if rl.IsKeyPressed(.K) {
         app.paint_settings.paint_mode = app.paint_settings.paint_mode == .Drawing ? .Erase : .Drawing
     }
@@ -172,7 +208,7 @@ app_update:: proc(app: ^App, dt: f32) {
     rl.DrawRectangleLinesEx(app.paint_settings.container_rect.rect, 2.5, rl.Color{125,125,125,255})
     
     painting_rect_update(&app.paint_settings, &app.view_settings, &app.settings)
-    painting_rect_render(&app.paint_settings, &app.view_settings, &app.settings)
+    painting_rect_render(app.font, &app.paint_settings, &app.view_settings, &app.beat_system, &app.settings)
     app_bar_render(app.font, app)
     
     if app.settings.app_mode == .Paint {
@@ -187,6 +223,8 @@ app_update:: proc(app: ^App, dt: f32) {
             draw_3d_plane_texture(app.view_settings.in_texutre, app.paint_settings.layers[:], &app.view_settings.view_plane_model)
             app.settings.app_mode = .View_3d
         } else if app.settings.app_mode == .View_3d {
+            app.settings.app_mode = .Beat
+        } else if app.settings.app_mode == .Beat {
             app.settings.app_mode = .Paint
         }
     }

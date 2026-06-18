@@ -20,7 +20,7 @@ main :: proc() {
     track: mem.Tracking_Allocator
     mem.tracking_allocator_init(&track, context.allocator)
     context.allocator = mem.tracking_allocator(&track)
-    
+    rl.InitAudioDevice()
     rl.SetConfigFlags({.WINDOW_RESIZABLE, .MSAA_4X_HINT})
     rl.InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "drawing")
     rl.SetExitKey(.KEY_NULL)
@@ -40,6 +40,10 @@ main :: proc() {
         rl.UnloadModel(app.view_settings.view_plane_model)
         rl.UnloadRenderTexture(app.view_settings.in_texutre)
         rl.UnloadRenderTexture(app.view_settings.out_texture)
+        for track in app.beat_system.tracks {
+            rl.UnloadSound(track.sound)
+        }
+        delete(app.beat_system.tracks)
         for _, entry in track.allocation_map {
             fmt.eprintf("%v leak %v bytes \n", entry.location, entry.size)
         }

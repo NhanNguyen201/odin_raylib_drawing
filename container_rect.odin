@@ -48,6 +48,7 @@ Size_widget :: struct {
     height_input: Text_Input
 }
 painting_rect_update :: proc(paint_settings : ^Paint_settings,view_settings: ^View_settings, app_settings: ^App_settings) {
+    container_rect := &paint_settings.container_rect
     if app_settings.app_mode == .Paint {
 
         mouse := rl.GetScreenToWorld2D(
@@ -56,7 +57,6 @@ painting_rect_update :: proc(paint_settings : ^Paint_settings,view_settings: ^Vi
         )
         active_layer := &paint_settings.layers[paint_settings.active_layer]
         brush_color := get_color_from_pallete(paint_settings.color_pallete.colors[:], paint_settings.color_pallete.active_color)
-        container_rect := &paint_settings.container_rect
         if app_settings.ui_scene == .None {
             if paint_settings.paint_mode == .Drawing   {
                 if rl.IsMouseButtonPressed(.LEFT) && is_rect_hover(mouse, paint_settings.paint_rect.rect) && is_rect_hover(rl.GetMousePosition(), paint_settings.container_rect.rect) {              
@@ -157,53 +157,7 @@ painting_rect_update :: proc(paint_settings : ^Paint_settings,view_settings: ^Vi
         
                 }
             }
-            right_side_rect := rl.Rectangle {
-                x = container_rect.rect.x + container_rect.rect.width - 3,
-                y = container_rect.rect.y + 3,
-                width = 6,
-                height = container_rect.rect.height - 6,
-            }
-            bottom_side_rect := rl.Rectangle {
-                x = container_rect.rect.x + 3,
-                y = container_rect.rect.y + container_rect.rect.height - 3,
-                width = container_rect.rect.width - 6,
-                height = 6,
-            }
-            if is_rect_hover(rl.GetMousePosition(), right_side_rect) {
-                rl.DrawRectangleRec(right_side_rect, rl.BLUE)
-                if rl.IsMouseButtonPressed(.LEFT) {
-                    container_rect.resize.active = .Right
-                    container_rect.resize.dragging = true
-                }
-            }
-             if is_rect_hover(rl.GetMousePosition(), bottom_side_rect) {
-                rl.DrawRectangleRec(bottom_side_rect, rl.BLUE)
-                if rl.IsMouseButtonPressed(.LEFT) {
-                    container_rect.resize.active = .Bottom
-                    container_rect.resize.dragging = true
-                }
-            }
             
-            if container_rect.resize.dragging  {
-                @static min_size : f32 = 100
-                delta := rl.GetMouseDelta()
-                switch container_rect.resize.active {
-                    case .Right : {
-                        container_rect.rect.width = max(min_size, container_rect.rect.width + delta.x)
-                        paint_settings.layers_rect.x += container_rect.rect.width > min_size ? delta.x : 0
-                    }
-                    case .Bottom: {
-                        container_rect.rect.height = max( min_size, container_rect.rect.height + delta.y)
-                        paint_settings.tools_rect.y += container_rect.rect.height > min_size ? delta.y : 0
-                    }
-
-                    case .None: 
-                }
-                if rl.IsMouseButtonReleased(.LEFT) {
-                    container_rect.resize.active = .None
-                    container_rect.resize.dragging = false
-                }
-            }
         }
     
         if app_settings.is_debug {
@@ -260,13 +214,62 @@ painting_rect_update :: proc(paint_settings : ^Paint_settings,view_settings: ^Vi
         }
     }
 
-    
+    if app_settings.app_mode != .View_3d {
+        right_side_rect := rl.Rectangle {
+            x = container_rect.rect.x + container_rect.rect.width - 3,
+            y = container_rect.rect.y + 3,
+            width = 6,
+            height = container_rect.rect.height - 6,
+        }
+        bottom_side_rect := rl.Rectangle {
+            x = container_rect.rect.x + 3,
+            y = container_rect.rect.y + container_rect.rect.height - 3,
+            width = container_rect.rect.width - 6,
+            height = 6,
+        }
+        if is_rect_hover(rl.GetMousePosition(), right_side_rect) {
+            rl.DrawRectangleRec(right_side_rect, rl.BLUE)
+            if rl.IsMouseButtonPressed(.LEFT) {
+                container_rect.resize.active = .Right
+                container_rect.resize.dragging = true
+            }
+        }
+            if is_rect_hover(rl.GetMousePosition(), bottom_side_rect) {
+            rl.DrawRectangleRec(bottom_side_rect, rl.BLUE)
+            if rl.IsMouseButtonPressed(.LEFT) {
+                container_rect.resize.active = .Bottom
+                container_rect.resize.dragging = true
+            }
+        }
+        
+        if container_rect.resize.dragging  {
+            @static min_size : f32 = 100
+            delta := rl.GetMouseDelta()
+            switch container_rect.resize.active {
+                case .Right : {
+                    container_rect.rect.width = max(min_size, container_rect.rect.width + delta.x)
+                    paint_settings.layers_rect.x += container_rect.rect.width > min_size ? delta.x : 0
+                }
+                case .Bottom: {
+                    container_rect.rect.height = max( min_size, container_rect.rect.height + delta.y)
+                    paint_settings.tools_rect.y += container_rect.rect.height > min_size ? delta.y : 0
+                }
+
+                case .None: 
+            }
+            if rl.IsMouseButtonReleased(.LEFT) {
+                container_rect.resize.active = .None
+                container_rect.resize.dragging = false
+            }
+        }
+
+    }
 }
 
-painting_rect_render :: proc(paint_settings: ^Paint_settings, view_settings: ^View_settings, app_settings: ^App_settings) {
+painting_rect_render :: proc(font: rl.Font, paint_settings: ^Paint_settings, view_settings: ^View_settings, beat_system: ^Beat_System, app_settings: ^App_settings) {
+    container_rect := paint_settings.container_rect
     if app_settings.app_mode == .Paint {
         paint_rect := paint_settings.paint_rect.rect
-        container_rect := paint_settings.container_rect
         rl.BeginMode2D(paint_settings.camera)
        
         rl.BeginScissorMode(
@@ -371,12 +374,70 @@ painting_rect_render :: proc(paint_settings: ^Paint_settings, view_settings: ^Vi
                 width = f32(view_settings.out_texture.texture.width),
                 height = f32(view_settings.out_texture.texture.height) 
             },
-            paint_settings.container_rect.rect,
+            container_rect.rect,
             0,
             0,
             rl.WHITE
         )
         
+    } else if app_settings.app_mode == .Beat {
+        @static font_size: f32 = 16
+        @static font_spacing: f32 = 0.3
+        @static track_rect_size :rl.Vector2 = { 80, 50 }
+        @static step_ui_width : f32 = 30
+        mouse_pos := rl.GetMousePosition()
+        rl.BeginScissorMode(
+            i32(container_rect.rect.x),
+            i32(container_rect.rect.y),
+            i32(container_rect.rect.width),
+            i32(container_rect.rect.height),
+        )
+        option_rect := rl.Rectangle {x = container_rect.rect.x + 20, y = container_rect.rect.y + 20, width = 270, height = 50}
+        rl.DrawRectangleRec(option_rect, rl.Color {220,220,220,220})
+        play_rect := rl.Rectangle {x = option_rect.x + 5, y = option_rect.y + 5, width = 40, height = 40}
+        if beat_system.playing {
+            rl.DrawRectangleRounded(play_rect, 0.2, 3, rl.Color {255,75,75,255})
+        } else {
+            rl.DrawTriangle({play_rect.x, play_rect.y}, {play_rect.x, play_rect.y + play_rect.height}, {play_rect.x + play_rect.width, play_rect.y + play_rect.height / 2}, rl.BLUE)
+        }
+        if is_rect_hover(rl.GetMousePosition(), play_rect) && rl.IsMouseButtonPressed(.LEFT) {
+            beat_system.playing = !beat_system.playing
+        }
+        volumn_rect := rl.Rectangle {x = play_rect.x + play_rect.width + 20, y = option_rect.y + 10, width = 150, height = 30}
+        
+        rl.DrawRectangleRec(volumn_rect, rl.Color {75,75,75, 255})
+        rl.DrawRectangleRec({x = volumn_rect.x, y= volumn_rect.y, width = beat_system.volume * volumn_rect.width, height = volumn_rect.height}, rl.Color {230,30,230,255})
+        if is_rect_hover(mouse_pos, volumn_rect) && rl.IsMouseButtonDown(.LEFT) {
+            beat_system.volume = (mouse_pos.x - volumn_rect.x) / volumn_rect.width
+            rl.SetMasterVolume( beat_system.volume)
+        }
+        for &track, track_idx in beat_system.tracks {
+            track_rect := rl.Rectangle {x = container_rect.rect.x + 20, y = option_rect.y + 20 + option_rect.height + (track_rect_size.y + 5) * f32(track_idx), width = track_rect_size.x, height = track_rect_size.y}
+            step_container_rect := rl.Rectangle {x =  track_rect.x + track_rect.width + 10, y = track_rect.y, width = step_ui_width * (len(track.steps) + 1), height = track_rect.height}
+
+            rl.DrawRectangleRec(track_rect, rl.Color {255,255,255,220})
+            rl.DrawRectangleRec(step_container_rect, rl.Color {220,220,255,255})
+            rl.DrawTextPro(font, fmt.ctprint(track.name), {track_rect.x + 2.5, track_rect.y + 25}, {0, font_size / 2},0 ,font_size, font_spacing, rl.BLACK)
+            for &step, step_idx in track.steps {
+                step_rect := rl.Rectangle {x = step_container_rect.x + 12.5 +(step_ui_width) * f32(step_idx), y = step_container_rect.y, width = step_ui_width, height = step_container_rect.height}
+                if beat_system.current_step == step_idx {
+                    line_rect := rl.Rectangle {x = step_rect.x + (step_rect.width ) * beat_system.timer / (60 / (beat_system.bpm * 4)), y = step_rect.y, width = 5, height = step_rect.height }
+                    if line_rect.x - step_rect.x + line_rect.width  >= step_rect.width {
+                        line_rect.width = step_rect.x + step_rect.width - line_rect.x 
+                    }
+                    rl.DrawRectangleRec(line_rect, rl.Color {244,50, 50, 255})
+                }
+                step_chkbox_rect := rl.Rectangle {x = step_rect.x + 2.5, y = step_rect.y + 10, width = 25, height = 30}
+                rl.DrawRectangleLinesEx(step_chkbox_rect, 1, rl.BLACK)
+                if is_rect_hover(mouse_pos, step_chkbox_rect) && rl.IsMouseButtonPressed(.LEFT) {
+                    beat_system.tracks[track_idx].steps[step_idx] = !beat_system.tracks[track_idx].steps[step_idx]
+                }
+                if step {
+                    rl.DrawCircleV(get_rect_center(step_chkbox_rect), 10, rl.BLUE)
+                }
+            }
+        }
+        rl.EndScissorMode()
     }
 }
 
