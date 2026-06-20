@@ -44,6 +44,13 @@ main :: proc() {
             rl.UnloadSound(track.sound)
         }
         delete(app.beat_system.tracks)
+        
+        delete(app.music_system.music_tracks)
+
+        for _, sound in app.music_system.generated_notes {
+            rl.UnloadSound(sound)   
+        }
+        delete(app.music_system.generated_notes)
         for _, entry in track.allocation_map {
             fmt.eprintf("%v leak %v bytes \n", entry.location, entry.size)
         }

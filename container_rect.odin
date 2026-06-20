@@ -266,7 +266,7 @@ painting_rect_update :: proc(paint_settings : ^Paint_settings,view_settings: ^Vi
     }
 }
 
-painting_rect_render :: proc(font: rl.Font, paint_settings: ^Paint_settings, view_settings: ^View_settings, beat_system: ^Beat_System, app_settings: ^App_settings) {
+painting_rect_render :: proc(font: rl.Font, paint_settings: ^Paint_settings, view_settings: ^View_settings, beat_system: ^Beat_System, music_system: ^Music_System, app_settings: ^App_settings) {
     container_rect := paint_settings.container_rect
     if app_settings.app_mode == .Paint {
         paint_rect := paint_settings.paint_rect.rect
@@ -438,7 +438,27 @@ painting_rect_render :: proc(font: rl.Font, paint_settings: ^Paint_settings, vie
             }
         }
         rl.EndScissorMode()
-    }
+    } else if app_settings.app_mode == .Music {
+        rl.BeginScissorMode(
+            i32(container_rect.rect.x),
+            i32(container_rect.rect.y),
+            i32(container_rect.rect.width),
+            i32(container_rect.rect.height)
+        )
+        for &track, track_idx in music_system.music_tracks {
+            for step, step_idx in track.steps {
+                step_rect := rl.Rectangle {x = container_rect.rect.x + 10 + 20 * f32(step_idx), y = container_rect.rect.y + 10 + 15 * f32(track_idx), width = 20, height = 15}
+                if is_rect_hover(rl.GetMousePosition(), step_rect) && rl.IsMouseButtonPressed(.LEFT) {
+                    track.steps[step_idx] = !track.steps[step_idx]
+                }
+                rl.DrawRectangleRec(step_rect, step ? rl.WHITE : rl.BLACK)
+                if step_idx == music_system.current_step {
+                    rl.DrawRectangleLinesEx(step_rect, 0.5, rl.BLUE)
+                }
+            }
+        }
+        rl.EndScissorMode()
+    } 
 }
 
 paint_canvas_2_point :: proc(p1, p2: rl.Vector2, brush_size: f32, brush_shape: Brush_shape, color: rl.Color) {

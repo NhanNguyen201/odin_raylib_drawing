@@ -19,13 +19,15 @@ App :: struct {
     paint_settings: Paint_settings,
     view_settings: View_settings,
     beat_system: Beat_System,
+    music_system: Music_System,
     font: rl.Font
 }
 
 App_mode :: enum {
     Paint, 
     View_3d,
-    Beat
+    Beat,
+    Music
 }
 
 Paint_mode :: enum {
@@ -183,11 +185,28 @@ app_init :: proc () -> App {
                     sound = rl.LoadSound("assets/tom.wav"),
                 }
             }
+        },
+        music_system = {
+            bpm = BEAT_STEP_NUMB
         }
     }
     app.beat_system.tracks[0].steps[2] = true
     texture := rl.LoadRenderTexture(i32(painting_rect.width), i32(painting_rect.height))
     rl.SetMasterVolume(beat_volumn)
+
+    for note_name in Note {
+        append(&app.music_system.music_tracks, Music_Track {note_name = note_name})
+    }
+    for note in Note {
+        pitch := get_note_pitch(note)
+        freq := note_to_freq( pitch )
+
+        sound := generate_sine_note(freq, 0.25)
+
+        app.music_system.generated_notes[pitch] = sound
+    } 
+
+
     append(&app.paint_settings.layers, Canvas_layer {
         name = "Layer_1", render_texture = texture,
         visible = true
@@ -198,6 +217,7 @@ app_init :: proc () -> App {
 app_update:: proc(app: ^App, dt: f32) {
     app.settings.app_time += rl.GetFrameTime()
     beat_engine_update(&app.beat_system)
+    music_update(&app.music_system)
     if rl.IsKeyPressed(.K) {
         app.paint_settings.paint_mode = app.paint_settings.paint_mode == .Drawing ? .Erase : .Drawing
     }
@@ -208,7 +228,7 @@ app_update:: proc(app: ^App, dt: f32) {
     rl.DrawRectangleLinesEx(app.paint_settings.container_rect.rect, 2.5, rl.Color{125,125,125,255})
     
     painting_rect_update(&app.paint_settings, &app.view_settings, &app.settings)
-    painting_rect_render(app.font, &app.paint_settings, &app.view_settings, &app.beat_system, &app.settings)
+    painting_rect_render(app.font, &app.paint_settings, &app.view_settings, &app.beat_system, &app.music_system, &app.settings)
     app_bar_render(app.font, app)
     
     if app.settings.app_mode == .Paint {

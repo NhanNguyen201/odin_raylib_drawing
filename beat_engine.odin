@@ -25,6 +25,7 @@ beat_engine_update :: proc(beat: ^Beat_System) {
     if rl.IsKeyPressed(.SPACE) {
         beat.playing = !beat.playing
     }
+    
     step_duration := 60 / (beat.bpm * 4)
     if beat.playing {
         beat.timer += rl.GetFrameTime()
