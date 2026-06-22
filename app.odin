@@ -195,15 +195,13 @@ app_init :: proc () -> App {
     rl.SetMasterVolume(beat_volumn)
 
     for note_name in Note {
-        append(&app.music_system.music_tracks, Music_Track {note_name = note_name})
-    }
-    for note in Note {
-        pitch := get_note_pitch(note)
+        pitch := get_note_pitch(note_name)
         freq := note_to_freq( pitch )
-
+        
         sound := generate_sine_note(freq, 0.25)
-
+        
         app.music_system.generated_notes[pitch] = sound
+        append(&app.music_system.music_tracks, Music_Track {note_name = note_name})
     } 
 
 

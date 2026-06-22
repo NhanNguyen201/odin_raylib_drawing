@@ -439,21 +439,61 @@ painting_rect_render :: proc(font: rl.Font, paint_settings: ^Paint_settings, vie
         }
         rl.EndScissorMode()
     } else if app_settings.app_mode == .Music {
+        @static color :[4] rl.Color = {
+            {128, 79, 232, 255},
+            {211, 44, 234, 255},
+            {213, 82, 163, 255},
+            {255, 112, 191, 255}
+        }
+        @static step_size :rl.Vector2 = {22.5, 20}
+        @static margin :f32 = 4
         rl.BeginScissorMode(
             i32(container_rect.rect.x),
             i32(container_rect.rect.y),
             i32(container_rect.rect.width),
             i32(container_rect.rect.height)
         )
+        track_container_rect := rl.Rectangle {x = container_rect.rect.x + 10, y = container_rect.rect.y + 10, width = BEAT_STEP_NUMB * (margin * 2 + step_size.x), height = 300}
+        rl.DrawRectangleRec(track_container_rect, UI_DARK_75_COLOR)
+
+        play_rect := rl.Rectangle {x = track_container_rect.x + 5, y = track_container_rect.y + 5, width = 40, height = 40}
+        if music_system.playing {
+            rl.DrawRectangleRounded(play_rect, 0.2, 3, rl.Color {255,75,75,255})
+        } else {
+            rl.DrawTriangle({play_rect.x, play_rect.y}, {play_rect.x, play_rect.y + play_rect.height}, {play_rect.x + play_rect.width, play_rect.y + play_rect.height / 2}, rl.BLUE)
+        }
+        if is_rect_hover(rl.GetMousePosition(), play_rect) && rl.IsMouseButtonPressed(.LEFT) {
+            music_system.playing = !music_system.playing
+        }
+
         for &track, track_idx in music_system.music_tracks {
             for step, step_idx in track.steps {
-                step_rect := rl.Rectangle {x = container_rect.rect.x + 10 + 20 * f32(step_idx), y = container_rect.rect.y + 10 + 15 * f32(track_idx), width = 20, height = 15}
+                step_rect := rl.Rectangle {
+                    x = track_container_rect.x + margin + (step_size.x + margin * 2.) * f32(step_idx), 
+                    y = track_container_rect.y + 50 + margin + (step_size.y + margin * 2) * f32(track_idx ), 
+                    width = step_size.x, 
+                    height = step_size.y
+                }
+                if step_idx == music_system.current_step {
+                    rl.DrawRectangleRec({
+                        x = step_rect.x - margin ,
+                        y = step_rect.y - margin ,
+                        width = step_rect.width + margin * 2,
+                        height = step_rect.height + margin * 2
+                    }, rl.Color {220,220,220, 160})
+                    
+                    if track_idx == len(music_system.music_tracks) - 1 {
+                        rl.DrawTriangle(
+                            {step_rect.x + step_rect.width / 2, step_rect.y + step_rect.height + 5},
+                            {step_rect.x  , step_rect.y + step_rect.height + 20},
+                            {step_rect.x + step_rect.width , step_rect.y + step_rect.height + 20},
+                            rl.BLACK
+                        )
+                    }
+                }
+                rl.DrawRectangleRec(step_rect, step ? color[track_idx % len(color)] : rl.Color {220,220,220,220})
                 if is_rect_hover(rl.GetMousePosition(), step_rect) && rl.IsMouseButtonPressed(.LEFT) {
                     track.steps[step_idx] = !track.steps[step_idx]
-                }
-                rl.DrawRectangleRec(step_rect, step ? rl.WHITE : rl.BLACK)
-                if step_idx == music_system.current_step {
-                    rl.DrawRectangleLinesEx(step_rect, 0.5, rl.BLUE)
                 }
             }
         }

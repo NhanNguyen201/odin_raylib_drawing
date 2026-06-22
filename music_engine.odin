@@ -46,7 +46,7 @@ note_to_freq :: proc(midi: int) -> f32 {
 }
 generate_sine_note :: proc( freq: f32, seconds: f32) -> rl.Sound {
 
-    sample_rate := 44100
+    @static sample_rate: u32 = 44100
 
     count := int( f32(sample_rate) * seconds )
 
@@ -56,7 +56,7 @@ generate_sine_note :: proc( freq: f32, seconds: f32) -> rl.Sound {
 
         t := f32(i) / f32(sample_rate)
 
-        value := clamp(math.sin_f32(2 * math.PI * freq * t ), 0, 1)
+        value := abs(math.sin_f32(2 * math.PI * freq * t )) * 0.375 + 0.125 
 
         samples[i] = i16( value * 32727 )
     }
@@ -64,7 +64,7 @@ generate_sine_note :: proc( freq: f32, seconds: f32) -> rl.Sound {
     // return rl.LoadWa(raw_data(data),count,sample_rate, 32,1)
     wave := rl.Wave{
         frameCount = u32(count),
-        sampleRate = u32(sample_rate),
+        sampleRate = sample_rate,
         sampleSize = 16,
         channels = 1,
 
@@ -130,7 +130,7 @@ get_note_pitch :: proc(note: Note) -> int {
         case .C4 : midi = 60
         case .D4 : midi = 62
         case .E4 : midi = 64
-        case .F4 : midi = 64
+        case .F4 : midi = 65
         case .G4 : midi = 67
         case .A4 : midi = 69
         case .B4 : midi = 71
